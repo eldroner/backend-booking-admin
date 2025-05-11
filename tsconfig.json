@@ -1,14 +1,19 @@
 {
-    "compilerOptions": {
-      "target": "ES2020",
-      "module": "commonjs",
-      "outDir": "./dist",
-      "rootDir": ".",
-      "strict": true,
-      "esModuleInterop": true,
-      "skipLibCheck": true,
-      "moduleResolution": "node"
-    },
-    "include": ["**/*.ts"],
-    "exclude": ["node_modules"]
-  }
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "plugins": [{
+      "name": "@angular/compiler-cli",
+      "strictTemplates": true,
+      "enableIvy": true
+    }]
+  },
+  "include": ["src/**/*.ts"], // ← Limitar a la carpeta src
+  "exclude": ["node_modules"]
+}
