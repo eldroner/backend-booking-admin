@@ -1,49 +1,85 @@
 import mongoose, { Schema } from 'mongoose';
-import { IBusinessConfig } from '../interfaces/config.interface'; // Importar la interfaz
+import { IBusinessConfig } from '../interfaces/config.interface';
 
-// Definir el esquema
+// Validaciones adicionales
+const timeValidator = (time: string) => /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
+const dateValidator = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
+
 const BusinessConfigSchema = new Schema<IBusinessConfig>({ 
-  
-    nombre: { type: String, required: true },
-    tipoNegocio: { 
-      type: String, 
-      enum: ['peluqueria', 'hotel', 'consulta_medica', 'general'], 
-      required: true 
-    },
-    duracionBase: { type: Number, required: true },
-    maxReservasPorSlot: { type: Number, required: true },
-    servicios: [
-      {
-        id: { type: String, required: true },
-        nombre: { type: String, required: true },
-        duracion: { type: Number, required: true }
-      }
-    ],
-    horariosNormales: [
-      {
-        dia: { type: Number, required: true },
-        tramos: [
-          {
-            horaInicio: { type: String, required: true },
-            horaFin: { type: String, required: true }
-          }
-        ]
-      }
-    ],
-    horariosEspeciales: [
-      {
-        fecha: { type: String, required: true },
-        horaInicio: { type: String, required: true },
-        horaFin: { type: String, required: true },
-        activo: { type: Boolean, required: true }
-      }
-    ]
+  nombre: { type: String, required: [true, 'El nombre es requerido'] },
+  tipoNegocio: { 
+    type: String, 
+    enum: ['peluqueria', 'hotel', 'consulta_medica', 'general'],
+    required: [true, 'El tipo de negocio es requerido']
   },
-  { timestamps: true }
-);
+  duracionBase: { 
+    type: Number, 
+    required: true,
+    min: [5, 'La duración mínima es 5 minutos'] 
+  },
+  maxReservasPorSlot: { 
+    type: Number, 
+    required: true,
+    min: [1, 'Debe permitir al menos 1 reserva por slot'] 
+  },
+  servicios: [{
+    id: { type: String, required: true },
+    nombre: { type: String, required: true },
+    duracion: { type: Number, required: true, min: 5 }
+  }],
+  horariosNormales: [{
+    dia: { 
+      type: Number, 
+      required: true,
+      min: 0,
+      max: 6 
+    },
+    tramos: [{
+      horaInicio: { 
+        type: String, 
+        required: true,
+        validate: {
+          validator: timeValidator,
+          message: 'Formato de hora inválido (HH:MM)'
+        }
+      },
+      horaFin: { 
+        type: String, 
+        required: true,
+        validate: {
+          validator: timeValidator,
+          message: 'Formato de hora inválido (HH:MM)'
+        }
+      }
+    }]
+  }],
+  horariosEspeciales: [{
+    fecha: { 
+      type: String, 
+      required: true,
+      validate: {
+        validator: dateValidator,
+        message: 'Formato de fecha inválido (YYYY-MM-DD)'
+      }
+    },
+    horaInicio: { 
+      type: String, 
+      required: true,
+      validate: timeValidator 
+    },
+    horaFin: { 
+      type: String, 
+      required: true,
+      validate: timeValidator 
+    },
+    activo: { type: Boolean, default: true }
+  }]
+}, { timestamps: true });
 
-// Exportar con nombre diferente
+// Índice único para asegurar solo un documento de configuración
+BusinessConfigSchema.index({}, { unique: true });
+
 export const BusinessConfigModel = mongoose.model<IBusinessConfig>(
-    'BusinessConfig', 
-    BusinessConfigSchema
-  );
+  'BusinessConfig', 
+  BusinessConfigSchema
+);
