@@ -1,7 +1,7 @@
-// backend/src/routes/api.routes.ts
 import express from 'express';
 import { getConfig, saveConfig, updateConfig } from '../controllers/config.controller';
-import { getReservas, createReserva } from '../controllers/reservas.controller';
+import { getReservas, createReserva, deleteReserva } from '../controllers/reservas.controller';
+
 
 
 const router = express.Router();
@@ -14,5 +14,6 @@ router.put('/config', updateConfig); // Nueva ruta PUT
 // Reservas
 router.get('/reservas', getReservas);    // Ruta final: /api/reservas
 router.post('/reservas', createReserva); // Ruta final: /api/reservas
+router.delete('/reservas/:id', deleteReserva);
 
 export default router;
