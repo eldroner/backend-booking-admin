@@ -1,25 +1,87 @@
-import { Schema, model, Types } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 
-const reservaSchema = new Schema({
+export interface IReserva extends Document {
+  _id: string;
   usuario: {
-    nombre: { type: String, required: true },
-    email: { type: String, required: true },
-    telefono: String
+    nombre: string;
+    email: string;
+    telefono?: string;
+  };
+  fechaInicio: Date;
+  fechaFin?: Date;
+  servicio: string;
+  estado: string;
+  notas?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const reservaSchema = new Schema<IReserva>({
+  _id: { type: String, required: true },
+  usuario: {
+    nombre: { 
+      type: String, 
+      required: true,
+      trim: true,
+      minlength: [2, 'El nombre debe tener al menos 2 caracteres']
+    },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      validate: {
+        validator: (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
+        message: 'Por favor ingrese un email válido'
+      }
+    },
+    telefono: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: (tel: string) => !tel || /^[0-9+\-\s]+$/.test(tel),
+        message: 'El teléfono solo puede contener números, +, - o espacios'
+      }
+    }
   },
-  fechaInicio: { type: Date, required: true },
-  servicio: { type: String, required: true },
+  fechaInicio: { 
+    type: Date, 
+    required: true,
+    validate: {
+      validator: (date: Date) => !isNaN(date.getTime()),
+      message: 'Fecha de inicio inválida'
+    }
+  },
+  fechaFin: { 
+    type: Date,
+    validate: {
+      validator: function(this: IReserva, date: Date) {
+        if (!date) return true;
+        return !isNaN(date.getTime()) && date > this.fechaInicio;
+      },
+      message: 'Fecha de fin debe ser posterior a la fecha de inicio'
+    }
+  },
+  servicio: { 
+    type: String, 
+    required: true,
+    trim: true
+  },
   estado: { 
     type: String, 
     enum: ['pendiente', 'confirmada', 'cancelada'],
     default: 'confirmada'
+  },
+  notas: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Las notas no pueden exceder los 500 caracteres']
   }
 }, {
-  // Habilitar _id automático como ObjectId
-  id: true,
+  timestamps: true,
   toJSON: {
-    virtuals: true,
     transform: (doc, ret) => {
-      ret.id = ret._id.toString();
+      ret.id = ret._id;
       delete ret._id;
       delete ret.__v;
       return ret;
@@ -27,4 +89,4 @@ const reservaSchema = new Schema({
   }
 });
 
-export const ReservaModel = model('Reserva', reservaSchema);
+export const ReservaModel = model<IReserva>('Reserva', reservaSchema);
