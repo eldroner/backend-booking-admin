@@ -1,32 +1,31 @@
 import { Request, Response } from 'express';
-import { ReservaModel, IReserva } from '../models/reserva.model';
+import { ReservaModel } from '../models/reserva.model';
+import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
-// Interfaz para el cuerpo de la solicitud
+// Interfaces para tipado fuerte
+interface Usuario {
+  nombre: string;
+  email: string;
+  telefono?: string;
+}
+
 interface ReservaRequestBody {
-  usuario: {
-    nombre: string;
-    email: string;
-    telefono?: string;
-  };
+  usuario: Usuario;
   fechaInicio: string;
   fechaFin?: string;
   servicio: string;
   estado?: string;
 }
 
-// Interfaz para la respuesta
 interface ReservaResponse {
   id: string;
-  usuario: {
-    nombre: string;
-    email: string;
-    telefono?: string;
-  };
+  usuario: Usuario;
   fechaInicio: string;
   fechaFin?: string;
   servicio: string;
   estado: string;
+  confirmacionToken: string;
 }
 
 export const createReserva = async (
@@ -62,19 +61,22 @@ export const createReserva = async (
       });
     }
 
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET no está configurado en las variables de entorno");
+}
+
+const confirmacionToken = jwt.sign(
+  {
+    email: req.body.usuario.email,
+    fecha: req.body.fechaInicio,
+    servicio: req.body.servicio
+  },
+  process.env.JWT_SECRET, // Sin el ! ahora
+  { expiresIn: '2d' }
+);
+
     // Crear objeto de reserva
-    const reservaData: {
-      _id: string;
-      usuario: {
-        nombre: string;
-        email: string;
-        telefono?: string;
-      };
-      fechaInicio: Date;
-      fechaFin?: Date; // Añade esto como opcional
-      servicio: string;
-      estado: string;
-    } = {
+    const reservaData: any = {
       _id: uuidv4(),
       usuario: {
         nombre: req.body.usuario.nombre.trim(),
@@ -83,7 +85,8 @@ export const createReserva = async (
       },
       fechaInicio: fechaInicio,
       servicio: req.body.servicio,
-      estado: req.body.estado || 'confirmada'
+      estado: 'pendiente',
+      confirmacionToken
     };
 
     // Añadir fechaFin si existe
@@ -114,7 +117,8 @@ export const createReserva = async (
       usuario: reservaGuardada.usuario,
       fechaInicio: reservaGuardada.fechaInicio.toISOString(),
       servicio: reservaGuardada.servicio,
-      estado: reservaGuardada.estado
+      estado: reservaGuardada.estado,
+      confirmacionToken: reservaGuardada.confirmacionToken as string
     };
 
     if (reservaGuardada.fechaFin) {
@@ -133,8 +137,6 @@ export const createReserva = async (
   }
 };
 
-// Añade esto al final de reservas.controller.ts
-
 export const getReservas = async (
   req: Request,
   res: Response<ReservaResponse[] | { error: string }>
@@ -147,6 +149,7 @@ export const getReservas = async (
       fechaInicio: reserva.fechaInicio.toISOString(),
       servicio: reserva.servicio,
       estado: reserva.estado,
+      confirmacionToken: reserva.confirmacionToken as string,
       ...(reserva.fechaFin && { fechaFin: reserva.fechaFin.toISOString() })
     }));
     

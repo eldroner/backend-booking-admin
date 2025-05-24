@@ -11,6 +11,7 @@ export interface IReserva extends Document {
   fechaFin?: Date;
   servicio: string;
   estado: string;
+  confirmacionToken?: string; // Añadido aquí
   notas?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -70,7 +71,13 @@ const reservaSchema = new Schema<IReserva>({
   estado: { 
     type: String, 
     enum: ['pendiente', 'confirmada', 'cancelada'],
-    default: 'confirmada'
+    default: 'pendiente' // Cambiado a 'pendiente' como estado inicial
+  },
+  confirmacionToken: { // Nuevo campo añadido
+    type: String,
+    index: true,
+    unique: true,
+    sparse: true // Permite null/undefined pero mantiene unicidad para valores existentes
   },
   notas: {
     type: String,
