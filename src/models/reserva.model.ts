@@ -11,7 +11,8 @@ export interface IReserva extends Document {
   fechaFin?: Date;
   servicio: string;
   estado: string;
-  confirmacionToken?: string; // Añadido aquí
+  confirmacionToken?: string;
+  duracion?: number; // Añade esta línea
   notas?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -44,6 +45,11 @@ const reservaSchema = new Schema<IReserva>({
         message: 'El teléfono solo puede contener números, +, - o espacios'
       }
     }
+  },
+  duracion: {
+    type: Number,
+    default: 30, // Valor por defecto
+    min: [5, 'La duración mínima es 5 minutos']
   },
   fechaInicio: { 
     type: Date, 

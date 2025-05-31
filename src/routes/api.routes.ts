@@ -1,6 +1,6 @@
 import express from 'express';
 import { getConfig, updateConfig } from '../controllers/config.controller';
-import { getReservas, createReserva, deleteReserva } from '../controllers/reservas.controller';
+import { getReservas, createReserva, deleteReserva, confirmarReserva } from '../controllers/reservas.controller';
 
 const router = express.Router();
 
@@ -12,5 +12,6 @@ router.put('/config', updateConfig); // Solo necesitamos PUT para crear/actualiz
 router.get('/reservas', getReservas);
 router.post('/reservas', createReserva);
 router.delete('/reservas/:id', deleteReserva);
+router.get('/reservas/confirmar/:token', confirmarReserva);
 
 export default router;
