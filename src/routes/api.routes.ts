@@ -1,6 +1,6 @@
 import express from 'express';
 import { getConfig, updateConfig } from '../controllers/config.controller';
-import { getReservas, createReserva, deleteReserva, confirmarReserva } from '../controllers/reservas.controller';
+import { getReservas, createReserva, deleteReserva, confirmarReserva, confirmarReservaDefinitiva } from '../controllers/reservas.controller';
 
 const router = express.Router();
 
@@ -13,5 +13,6 @@ router.get('/reservas', getReservas);
 router.post('/reservas', createReserva);
 router.delete('/reservas/:id', deleteReserva);
 router.get('/reservas/confirmar/:token', confirmarReserva);
+router.post('/reservas/confirmar-definitiva/:token', confirmarReservaDefinitiva);
 
 export default router;

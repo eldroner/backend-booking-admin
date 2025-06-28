@@ -11,6 +11,8 @@ interface Usuario {
   telefono?: string;
 }
 
+
+
 interface ReservaRequestBody {
   usuario: Usuario;
   fechaInicio: string;
@@ -31,9 +33,13 @@ interface ReservaResponse {
   duracion: number; // Añadir esta propiedad
 }
 
+interface TokenResponse {
+  token: string;
+}
+
 export const createReserva = async (
   req: Request<{}, {}, ReservaRequestBody>,
-  res: Response<ReservaResponse | { error: string; detalles?: string }>
+  res: Response<TokenResponse | { error: string; detalles?: string }> // Cambiado aquí
 ) => {
   try {
     // Validación de campos requeridos
@@ -78,6 +84,10 @@ export const createReserva = async (
       { expiresIn: '2d' }
     );
 
+    if (!confirmacionToken) {
+  throw new Error("Error al generar el token de confirmación");
+}
+
     // Crear objeto de reserva
     const reservaData: any = {
       _id: uuidv4(),
@@ -88,10 +98,13 @@ export const createReserva = async (
       },
       fechaInicio: fechaInicio,
       servicio: req.body.servicio,
-      estado: 'pendiente',
+      estado: 'pendiente_email',
       confirmacionToken,
-      duracion: req.body.duracion || 30
+      duracion: req.body.duracion || 30,
+      expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000) 
     };
+
+    
 
     // Añadir fechaFin si existe
     if (req.body.fechaFin) {
@@ -115,22 +128,9 @@ export const createReserva = async (
     const nuevaReserva = new ReservaModel(reservaData);
     const reservaGuardada = await nuevaReserva.save();
 
-    // Preparar respuesta
-    const response: ReservaResponse = {
-      id: reservaGuardada._id,
-      usuario: reservaGuardada.usuario,
-      fechaInicio: reservaGuardada.fechaInicio.toISOString(),
-      servicio: reservaGuardada.servicio,
-      estado: reservaGuardada.estado,
-      confirmacionToken: reservaGuardada.confirmacionToken as string,
-      duracion: reservaGuardada.duracion || 30
-    };
-
-    if (reservaGuardada.fechaFin) {
-      response.fechaFin = reservaGuardada.fechaFin.toISOString();
-    }
-
-    return res.status(201).json(response);
+  return res.status(201).json({
+    token: reservaGuardada.confirmacionToken
+  });
 
   } catch (error) {
     console.error('Error en createReserva:', error);
@@ -139,6 +139,44 @@ export const createReserva = async (
       error: "Error al crear reserva",
       detalles: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     });
+  }
+};
+
+export const confirmarReservaDefinitiva = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    
+    // 1. Busca la reserva temporal
+    const reserva = await ReservaModel.findOneAndUpdate(
+      { 
+        confirmacionToken: token,
+        estado: 'pendiente_email',
+        expiresAt: { $gt: new Date() }  // Solo si no ha expirado
+      },
+      { $set: { estado: 'confirmada' } },  // Actualiza el estado
+      { new: true }  // Devuelve el documento actualizado
+    );
+
+    if (!reserva) {
+      return res.status(404).json({ 
+        error: "Token inválido, expirado o ya confirmado" 
+      });
+    }
+
+    // 2. Respuesta exitosa
+    res.json({
+      success: true,
+      reserva: {
+        id: reserva._id,
+        usuario: reserva.usuario,
+        fechaInicio: reserva.fechaInicio.toISOString(),
+        servicio: reserva.servicio
+      }
+    });
+
+  } catch (error) {
+    console.error('Error en confirmación definitiva:', error);
+    res.status(500).json({ error: "Error al confirmar reserva" });
   }
 };
 
@@ -207,44 +245,56 @@ export const getReservas = async (
 export const confirmarReserva = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
+    console.log('Token recibido:', token); // Para debug
 
     if (!process.env.JWT_SECRET) {
       throw new Error("JWT_SECRET no configurado");
     }
 
     // Verificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as {
+      email: string;
+      fecha: string;
+      servicio: string;
+    };
 
-    // Buscar reserva pendiente
-    const reserva = await ReservaModel.findOne({
-      'usuario.email': decoded.email,
-      fechaInicio: new Date(decoded.fecha),  // <-- Asegúrate que coincide
-      servicio: decoded.servicio,
-      estado: 'pendiente'
-    });
+    console.log('Datos decodificados:', decoded); // Para debug
+
+    // Buscar y actualizar reserva
+    const reserva = await ReservaModel.findOneAndUpdate(
+      {
+        'usuario.email': decoded.email,
+        fechaInicio: new Date(decoded.fecha),
+        servicio: decoded.servicio,
+        estado: 'pendiente_email'
+      },
+      { $set: { estado: 'confirmada' } },
+      { new: true }
+    );
 
     if (!reserva) {
-      return res.status(404).json({ error: "Reserva no encontrada o ya confirmada" });
+      console.error('Reserva no encontrada con estos datos:', {
+        email: decoded.email,
+        fecha: decoded.fecha,
+        servicio: decoded.servicio
+      });
+      return res.status(404).json({ error: "Reserva no encontrada" });
     }
 
-    // Actualizar estado
-    reserva.estado = 'confirmada';
-    await reserva.save();
-
+    // Respuesta exitosa
     res.json({
       success: true,
       reserva: {
         id: reserva._id,
-        usuario: reserva.usuario,
-        fechaInicio: reserva.fechaInicio.toISOString(),
-        servicio: reserva.servicio
+        servicio: reserva.servicio,
+        fecha: reserva.fechaInicio
       }
     });
 
   } catch (error) {
-    console.error('Error confirmando reserva:', error);
+    console.error('Error completo:', error);
     res.status(400).json({
-      error: "Token inválido o expirado"
+      error: error instanceof Error ? error.message : 'Error desconocido'
     });
   }
 };

@@ -11,7 +11,7 @@ export interface IReserva extends Document {
   fechaFin?: Date;
   servicio: string;
   estado: string;
-  confirmacionToken?: string;
+  confirmacionToken: string;
   duracion?: number; // Añade esta línea
   notas?: string;
   createdAt: Date;
@@ -44,7 +44,11 @@ const reservaSchema = new Schema<IReserva>({
         validator: (tel: string) => !tel || /^[0-9+\-\s]+$/.test(tel),
         message: 'El teléfono solo puede contener números, +, - o espacios'
       }
-    }
+    },
+    expiresAt: {  // Nuevo campo
+    type: Date,
+    index: { expires: '0s' }  // Borra automáticamente al caducar
+  }
   },
   duracion: {
     type: Number,
@@ -76,11 +80,12 @@ const reservaSchema = new Schema<IReserva>({
   },
   estado: { 
     type: String, 
-    enum: ['pendiente', 'confirmada', 'cancelada'],
-    default: 'pendiente' // Cambiado a 'pendiente' como estado inicial
+    enum: ['pendiente', 'pendiente_email', 'confirmada', 'cancelada'],
+    default: 'pendiente_email' // Cambiado a 'pendiente' como estado inicial
   },
   confirmacionToken: { // Nuevo campo añadido
     type: String,
+    required: true,
     index: true,
     unique: true,
     sparse: true // Permite null/undefined pero mantiene unicidad para valores existentes
