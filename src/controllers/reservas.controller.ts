@@ -11,8 +11,6 @@ interface Usuario {
   telefono?: string;
 }
 
-
-
 interface ReservaRequestBody {
   usuario: Usuario;
   fechaInicio: string;
@@ -30,7 +28,7 @@ interface ReservaResponse {
   servicio: string;
   estado: string;
   confirmacionToken: string;
-  duracion: number; // Añadir esta propiedad
+  duracion: number;
 }
 
 interface TokenResponse {
@@ -142,6 +140,7 @@ export const createReserva = async (
   }
 };
 
+
 export const addReservaAdmin = async (req: Request, res: Response) => {
   try {
     const { usuario, fechaInicio, fechaFin, servicio, duracion } = req.body;
@@ -193,40 +192,28 @@ export const addReservaAdmin = async (req: Request, res: Response) => {
 export const confirmarReservaDefinitiva = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
-    
-    // 1. Busca la reserva temporal
+
     const reserva = await ReservaModel.findOneAndUpdate(
-      { 
+      {
         confirmacionToken: token,
         estado: 'pendiente_email',
-        expiresAt: { $gt: new Date() }  // Solo si no ha expirado
+        expiresAt: { $gt: new Date() }
       },
-      { $set: { estado: 'confirmada' } },  // Actualiza el estado
-      { new: true }  // Devuelve el documento actualizado
+      { $set: { estado: 'confirmada' } },
+      { new: true }
     );
 
     if (!reserva) {
-      return res.status(404).json({ 
-        error: "Token inválido, expirado o ya confirmado" 
-      });
+      return res.status(404).json({ error: "Reserva no encontrada o ya confirmada" });
     }
 
-    // 2. Respuesta exitosa
-    res.json({
-      success: true,
-      reserva: {
-        id: reserva._id,
-        usuario: reserva.usuario,
-        fechaInicio: reserva.fechaInicio.toISOString(),
-        servicio: reserva.servicio
-      }
-    });
-
+    res.json({ success: true, reserva });
   } catch (error) {
-    console.error('Error en confirmación definitiva:', error);
+    console.error('Error en confirmarReservaDefinitiva:', error);
     res.status(500).json({ error: "Error al confirmar reserva" });
   }
 };
+  
 
 export const getReservas = async (
   req: Request,
@@ -344,49 +331,6 @@ export const confirmarReserva = async (req: Request, res: Response) => {
     res.status(400).json({
       error: error instanceof Error ? error.message : 'Error desconocido'
     });
-  }
-};
-
-// Nuevo endpoint para verificar disponibilidad
-export const checkDisponibilidad = async (req: Request, res: Response) => {
-  try {
-    const { fecha, hora, duracion } = req.query;
-
-    // Validaciones
-    if (!fecha || !hora || !duracion) {
-      return res.status(400).json({
-        error: "Faltan parámetros: fecha, hora o duracion"
-      });
-    }
-
-    const config = await BusinessConfigModel.findOne();
-    if (!config) {
-      return res.status(500).json({ error: "Configuración no encontrada" });
-    }
-
-    const horaInicio = new Date(`${fecha}T${hora}:00`);
-    const horaFin = new Date(horaInicio.getTime() + parseInt(duracion as string) * 60000);
-
-    // Verificar solapamientos
-    const reservasExistentes = await ReservaModel.find({
-      $or: [
-        {
-          fechaInicio: { $lt: horaFin },
-          fechaFin: { $gt: horaInicio }
-        },
-        {
-          fechaInicio: { $gte: horaInicio, $lt: horaFin }
-        }
-      ],
-      estado: { $in: ['pendiente', 'confirmada'] }
-    });
-
-    const disponible = reservasExistentes.length < config.maxReservasPorSlot;
-    res.json({ disponible });
-
-  } catch (error) {
-    console.error('Error en checkDisponibilidad:', error);
-    res.status(500).json({ error: "Error al verificar disponibilidad" });
   }
 };
 
