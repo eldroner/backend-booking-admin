@@ -44,11 +44,11 @@ const reservaSchema = new Schema<IReserva>({
         validator: (tel: string) => !tel || /^[0-9+\-\s]+$/.test(tel),
         message: 'El teléfono solo puede contener números, +, - o espacios'
       }
-    },
-    expiresAt: {  // Nuevo campo
+    }
+  },
+  expiresAt: {
     type: Date,
-    index: { expires: '0s' }  // Borra automáticamente al caducar
-  }
+    index: { expires: '48h' }
   },
   duracion: {
     type: Number,
