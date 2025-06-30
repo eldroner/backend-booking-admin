@@ -142,6 +142,54 @@ export const createReserva = async (
   }
 };
 
+export const addReservaAdmin = async (req: Request, res: Response) => {
+  try {
+    const { usuario, fechaInicio, fechaFin, servicio, duracion } = req.body;
+
+    // Validaciones básicas
+    if (!usuario || !usuario.nombre || !fechaInicio || !servicio) {
+      return res.status(400).json({ message: 'Faltan campos obligatorios para la reserva.' });
+    }
+
+    const newFechaInicio = new Date(fechaInicio);
+    if (isNaN(newFechaInicio.getTime())) {
+      return res.status(400).json({ message: 'Fecha de inicio inválida.' });
+    }
+
+    const reservaData: any = {
+      _id: uuidv4(),
+      usuario: {
+        nombre: usuario.nombre.trim(),
+        email: usuario.email?.trim().toLowerCase() || '', // Email puede ser opcional para admin
+        telefono: usuario.telefono?.trim() || ''
+      },
+      fechaInicio: newFechaInicio,
+      servicio: servicio,
+      duracion: duracion || 30, // Duración por defecto si no se especifica
+      estado: 'confirmada', // Directamente confirmada
+      confirmacionToken: 'admin-generated' // Token ficticio o específico para admin
+    };
+
+    if (fechaFin) {
+      const newFechaFin = new Date(fechaFin);
+      if (isNaN(newFechaFin.getTime())) {
+        return res.status(400).json({ message: 'Fecha de fin inválida.' });
+      }
+      reservaData.fechaFin = newFechaFin;
+    }
+
+    const nuevaReserva = new ReservaModel(reservaData);
+    const reservaGuardada = await nuevaReserva.save();
+
+    res.status(201).json(reservaGuardada);
+
+  } catch (error) {
+    console.error('Error en addReservaAdmin:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    res.status(500).json({ message: 'Error al crear la reserva como administrador', error: errorMessage });
+  }
+};
+
 export const confirmarReservaDefinitiva = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
