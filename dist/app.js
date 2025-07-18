@@ -10,7 +10,6 @@ const cors_1 = __importDefault(require("cors"));
 const morgan_1 = __importDefault(require("morgan"));
 const api_routes_1 = __importDefault(require("./routes/api.routes"));
 const app = (0, express_1.default)();
-
 // 1. Configuración mejorada de MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/booking-manager';
 const mongooseOptions = {
@@ -23,35 +22,33 @@ const mongooseOptions = {
 mongoose_1.default.connect(MONGODB_URI, mongooseOptions)
     .then(() => console.log('✅ Conectado a MongoDB'))
     .catch(err => {
-        console.error('❌ Error de conexión a MongoDB:', err.message);
-        process.exit(1); // Salir si no hay conexión a DB
-    });
-
+    console.error('❌ Error de conexión a MongoDB:', err.message);
+    process.exit(1); // Salir si no hay conexión a DB
+});
 // 2. Middlewares mejorados
-
 const allowedOrigins = [
     'http://localhost:4200',
     'http://127.0.0.1:4200',
-    'https://reservas.pixelnova.es'
+    'https://reservas.pixelnova.es' // Añadido tu dominio real aquí
 ];
-
 app.use((0, cors_1.default)({
-    origin: function(origin, callback) {
-        // Permitir peticiones sin origen (Postman, curl, etc.)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = `CORS policy: El origen ${origin} no está permitido.`;
-            return callback(new Error(msg), false);
+    origin: function (origin, callback) {
+        // Permite solicitudes sin origen (como curl o postman)
+        if (!origin)
+            return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
         }
-        return callback(null, true);
+        else {
+            callback(new Error('Origen CORS no permitido'));
+        }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
+app.use(express_1.default.json({ limit: '10kb' })); // Limitar tamaño de payload
 // Logger de solicitudes HTTP
 app.use((0, morgan_1.default)('dev'));
-
 // 3. Middleware de timeout global
 app.use((req, res, next) => {
     res.setTimeout(8000, () => {
@@ -62,7 +59,6 @@ app.use((req, res, next) => {
     });
     next();
 });
-
 // 4. Health Check Endpoint
 app.get('/health', (req, res) => {
     const dbStatus = mongoose_1.default.connection.readyState === 1 ? 'connected' : 'disconnected';
@@ -73,10 +69,8 @@ app.get('/health', (req, res) => {
         environment: process.env.NODE_ENV || 'development'
     });
 });
-
 // 5. Conectar rutas principales
 app.use('/api', api_routes_1.default);
-
 // 6. Manejador de errores global
 app.use((err, req, res, next) => {
     console.error('🔥 Error global:', {
@@ -90,7 +84,6 @@ app.use((err, req, res, next) => {
         ...(process.env.NODE_ENV !== 'production' && { details: err.message })
     });
 });
-
 // 7. Ruta para 404
 app.use('*', (req, res) => {
     res.status(404).json({
@@ -98,13 +91,11 @@ app.use('*', (req, res) => {
         attemptedPath: req.originalUrl
     });
 });
-
 // 8. Configuración del servidor
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
     console.log(`✅ Servidor backend en puerto ${PORT}`);
 });
-
 // 9. Manejo de cierre adecuado
 process.on('SIGTERM', () => {
     console.log('🛑 Recibido SIGTERM. Cerrando servidor...');
