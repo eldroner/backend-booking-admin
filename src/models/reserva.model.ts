@@ -14,6 +14,7 @@ export interface IReserva extends Document {
   confirmacionToken: string;
   duracion?: number; // Añade esta línea
   notas?: string;
+  expiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

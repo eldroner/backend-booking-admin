@@ -191,8 +191,14 @@ export const getReservas = async (
   res: Response<ReservaResponse[] | { error: string; detalles?: string }>
 ) => {
   try {
-    const { fecha } = req.query;
-    let query: any = { estado: { $in: ['pendiente', 'confirmada'] } };
+    const { fecha, estado } = req.query;
+    let query: any = {};
+
+    if (estado && typeof estado === 'string') {
+      query.estado = estado;
+    } else {
+      query.estado = { $in: ['pendiente', 'pendiente_email', 'confirmada'] };
+    }
 
     if (fecha) {
       if (isNaN(Date.parse(fecha as string))) {
