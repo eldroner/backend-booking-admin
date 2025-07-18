@@ -26,12 +26,28 @@ mongoose.connect(MONGODB_URI, mongooseOptions)
   });
 
 // 2. Middlewares mejorados
-app.use(express.json({ limit: '10kb' })); // Limitar tamaño de payload
+
+const allowedOrigins = [
+  'http://localhost:4200',
+  'http://127.0.0.1:4200',
+  'https://reservas.pixelnova.es'  // Añadido tu dominio real aquí
+];
+
 app.use(cors({
-  origin: ['http://localhost:4200', 'http://127.0.0.1:4200'], // Alternativas para Angular
+  origin: function(origin, callback) {
+    // Permite solicitudes sin origen (como curl o postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Origen CORS no permitido'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+app.use(express.json({ limit: '10kb' })); // Limitar tamaño de payload
 
 // Logger de solicitudes HTTP
 app.use(morgan('dev'));
