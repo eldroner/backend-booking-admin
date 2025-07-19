@@ -48,8 +48,7 @@ const reservaSchema = new Schema<IReserva>({
     }
   },
   expiresAt: {
-    type: Date,
-    index: { expires: '48h' }
+    type: Date
   },
   duracion: {
     type: Number,
