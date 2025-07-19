@@ -26,26 +26,7 @@ mongoose_1.default.connect(MONGODB_URI, mongooseOptions)
     process.exit(1); // Salir si no hay conexión a DB
 });
 // 2. Middlewares mejorados
-const allowedOrigins = [
-    'http://localhost:4200',
-    'http://127.0.0.1:4200',
-    'https://reservas.pixelnova.es' // Añadido tu dominio real aquí
-];
-app.use((0, cors_1.default)({
-    origin: function (origin, callback) {
-        // Permite solicitudes sin origen (como curl o postman)
-        if (!origin)
-            return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        }
-        else {
-            callback(new Error('Origen CORS no permitido'));
-        }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use((0, cors_1.default)()); // Temporalmente para permitir todo
 app.use(express_1.default.json({ limit: '10kb' })); // Limitar tamaño de payload
 // Logger de solicitudes HTTP
 app.use((0, morgan_1.default)('dev'));
