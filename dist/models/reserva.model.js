@@ -31,8 +31,7 @@ const reservaSchema = new mongoose_1.Schema({
         }
     },
     expiresAt: {
-        type: Date,
-        index: { expires: '48h' }
+        type: Date
     },
     duracion: {
         type: Number,

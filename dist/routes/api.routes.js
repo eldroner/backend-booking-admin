@@ -18,6 +18,7 @@ router.post('/reservas/admin', reservas_controller_1.addReservaAdmin);
 router.delete('/reservas/:id', reservas_controller_1.deleteReserva);
 router.get('/reservas/confirmar/:token', reservas_controller_1.confirmarReserva);
 router.post('/reservas/confirmar-definitiva/:token', reservas_controller_1.confirmarReservaDefinitiva);
+router.put('/reservas/:id/confirm', reservas_controller_1.confirmarReservaAdmin);
 // Fechas bloqueadas
 router.get('/bloqueo', bloqueo_controller_1.getFechasBloqueadas);
 router.post('/bloqueo', bloqueo_controller_1.addFechaBloqueada);

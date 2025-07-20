@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteReserva = exports.confirmarReserva = exports.getReservas = exports.confirmarReservaDefinitiva = exports.addReservaAdmin = exports.createReserva = void 0;
+exports.deleteReserva = exports.confirmarReserva = exports.getReservas = exports.confirmarReservaAdmin = exports.confirmarReservaDefinitiva = exports.addReservaAdmin = exports.createReserva = void 0;
 const reserva_model_1 = require("../models/reserva.model");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const uuid_1 = require("uuid");
@@ -133,6 +133,21 @@ const confirmarReservaDefinitiva = async (req, res) => {
     }
 };
 exports.confirmarReservaDefinitiva = confirmarReservaDefinitiva;
+const confirmarReservaAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const reserva = await reserva_model_1.ReservaModel.findByIdAndUpdate(id, { $set: { estado: 'confirmada', fechaConfirmacion: new Date() } }, { new: true });
+        if (!reserva) {
+            return res.status(404).json({ message: 'Reserva no encontrada' });
+        }
+        res.json(reserva);
+    }
+    catch (error) {
+        console.error('Error al confirmar reserva por admin:', error);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
+exports.confirmarReservaAdmin = confirmarReservaAdmin;
 const getReservas = async (req, res) => {
     try {
         const { fecha, estado } = req.query;
