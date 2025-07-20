@@ -184,6 +184,26 @@ export const confirmarReservaDefinitiva = async (req: Request, res: Response) =>
     res.status(500).json({ error: "Error al confirmar reserva" });
   }
 };
+
+export const confirmarReservaAdmin = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const reserva = await ReservaModel.findByIdAndUpdate(
+      id,
+      { $set: { estado: 'confirmada', fechaConfirmacion: new Date() } },
+      { new: true }
+    );
+
+    if (!reserva) {
+      return res.status(404).json({ message: 'Reserva no encontrada' });
+    }
+
+    res.json(reserva);
+  } catch (error) {
+    console.error('Error al confirmar reserva por admin:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
   
 
 export const getReservas = async (
