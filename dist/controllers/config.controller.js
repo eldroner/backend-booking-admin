@@ -59,10 +59,12 @@ const getConfig = async (req, res) => {
 exports.getConfig = getConfig;
 const updateConfig = async (req, res) => {
     try {
+        const { idNegocio } = req.query;
+        const query = idNegocio ? { idNegocio: idNegocio } : { idNegocio: { $exists: false } };
         // Validación con Zod
         const validatedData = ConfigSchema.parse(req.body);
         // Actualizar o crear la configuración
-        const updatedConfig = await config_model_1.BusinessConfigModel.findOneAndUpdate({}, validatedData, { new: true, upsert: true });
+        const updatedConfig = await config_model_1.BusinessConfigModel.findOneAndUpdate(query, { ...validatedData, ...(idNegocio && { idNegocio }) }, { new: true, upsert: true, setDefaultsOnInsert: true });
         res.json(updatedConfig);
     }
     catch (error) {

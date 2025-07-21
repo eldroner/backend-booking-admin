@@ -4,6 +4,7 @@ exports.ReservaModel = void 0;
 const mongoose_1 = require("mongoose");
 const reservaSchema = new mongoose_1.Schema({
     _id: { type: String, required: true },
+    idNegocio: { type: String, required: false },
     usuario: {
         nombre: {
             type: String,
@@ -71,7 +72,6 @@ const reservaSchema = new mongoose_1.Schema({
         type: String,
         required: true,
         index: true,
-        unique: true,
         sparse: true // Permite null/undefined pero mantiene unicidad para valores existentes
     },
     notas: {
@@ -90,4 +90,7 @@ const reservaSchema = new mongoose_1.Schema({
         }
     }
 });
+// Índice compuesto para asegurar que una reserva es única para un servicio y fecha por negocio
+// Se usa sparse: true para que el índice único solo se aplique a documentos que tengan el campo idNegocio.
+reservaSchema.index({ idNegocio: 1, fechaInicio: 1, servicio: 1 }, { unique: true, sparse: true });
 exports.ReservaModel = (0, mongoose_1.model)('Reserva', reservaSchema);

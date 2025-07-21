@@ -7,12 +7,13 @@ exports.deleteReserva = exports.confirmarReserva = exports.getReservas = exports
 const reserva_model_1 = require("../models/reserva.model");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const uuid_1 = require("uuid");
-const createReserva = async (req, res // Cambiado aquí
-) => {
+const crypto_1 = __importDefault(require("crypto"));
+const createReserva = async (req, res) => {
     try {
+        const { idNegocio, ...reservaBody } = req.body;
         // Validación de campos requeridos
         const requiredFields = ['usuario', 'fechaInicio', 'servicio'];
-        const missingFields = requiredFields.filter(field => !req.body[field]);
+        const missingFields = requiredFields.filter(field => !reservaBody[field]);
         if (missingFields.length > 0) {
             return res.status(400).json({
                 error: "Datos incompletos",
@@ -20,14 +21,14 @@ const createReserva = async (req, res // Cambiado aquí
             });
         }
         // Validación de usuario
-        if (!req.body.usuario.nombre?.trim() || !req.body.usuario.email?.trim()) {
+        if (!reservaBody.usuario.nombre?.trim() || !reservaBody.usuario.email?.trim()) {
             return res.status(400).json({
                 error: "Datos de usuario incompletos",
                 detalles: "Nombre y email son requeridos"
             });
         }
         // Validación de fechas
-        const fechaInicio = new Date(req.body.fechaInicio);
+        const fechaInicio = new Date(reservaBody.fechaInicio);
         if (isNaN(fechaInicio.getTime())) {
             return res.status(400).json({
                 error: "Fecha inválida",
@@ -38,32 +39,32 @@ const createReserva = async (req, res // Cambiado aquí
             throw new Error("JWT_SECRET no está configurado en las variables de entorno");
         }
         const confirmacionToken = jsonwebtoken_1.default.sign({
-            email: req.body.usuario.email,
+            email: reservaBody.usuario.email,
             fecha: fechaInicio.toISOString(),
-            servicio: req.body.servicio
-        }, process.env.JWT_SECRET, // Sin el ! ahora
-        { expiresIn: '2d' });
+            servicio: reservaBody.servicio
+        }, process.env.JWT_SECRET, { expiresIn: '2d' });
         if (!confirmacionToken) {
             throw new Error("Error al generar el token de confirmación");
         }
         // Crear objeto de reserva
         const reservaData = {
             _id: (0, uuid_1.v4)(),
+            idNegocio: idNegocio,
             usuario: {
-                nombre: req.body.usuario.nombre.trim(),
-                email: req.body.usuario.email.trim().toLowerCase(),
-                telefono: req.body.usuario.telefono?.trim()
+                nombre: reservaBody.usuario.nombre.trim(),
+                email: reservaBody.usuario.email.trim().toLowerCase(),
+                telefono: reservaBody.usuario.telefono?.trim()
             },
             fechaInicio: fechaInicio,
-            servicio: req.body.servicio,
+            servicio: reservaBody.servicio,
             estado: 'pendiente_email',
             confirmacionToken,
-            duracion: req.body.duracion || 30,
+            duracion: reservaBody.duracion || 30,
             expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000)
         };
         // Añadir fechaFin si existe
-        if (req.body.fechaFin) {
-            const fechaFin = new Date(req.body.fechaFin);
+        if (reservaBody.fechaFin) {
+            const fechaFin = new Date(reservaBody.fechaFin);
             if (isNaN(fechaFin.getTime())) {
                 return res.status(400).json({
                     error: "Fecha inválida",
@@ -95,13 +96,14 @@ const createReserva = async (req, res // Cambiado aquí
     }
 };
 exports.createReserva = createReserva;
-const crypto_1 = __importDefault(require("crypto"));
 const addReservaAdmin = async (req, res) => {
     try {
+        const { idNegocio, ...reservaData } = req.body;
         const uniqueToken = `admin-generated-${crypto_1.default.randomBytes(8).toString('hex')}`;
         const reserva = new reserva_model_1.ReservaModel({
             _id: (0, uuid_1.v4)(),
-            ...req.body,
+            ...reservaData,
+            ...(idNegocio && { idNegocio }),
             confirmacionToken: uniqueToken,
             estado: 'confirmada'
         });
@@ -150,8 +152,14 @@ const confirmarReservaAdmin = async (req, res) => {
 exports.confirmarReservaAdmin = confirmarReservaAdmin;
 const getReservas = async (req, res) => {
     try {
-        const { fecha, estado } = req.query;
+        const { fecha, estado, idNegocio } = req.query;
         let query = {};
+        if (idNegocio) {
+            query.idNegocio = idNegocio;
+        }
+        else {
+            query.idNegocio = { $exists: false };
+        }
         if (estado && typeof estado === 'string') {
             query.estado = estado;
         }
@@ -252,7 +260,15 @@ exports.confirmarReserva = confirmarReserva;
 const deleteReserva = async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await reserva_model_1.ReservaModel.deleteOne({ _id: id });
+        const { idNegocio } = req.query;
+        const query = { _id: id };
+        if (idNegocio) {
+            query.idNegocio = idNegocio;
+        }
+        else {
+            query.idNegocio = { $exists: false };
+        }
+        const result = await reserva_model_1.ReservaModel.deleteOne(query);
         if (result.deletedCount === 0) {
             return res.status(404).json({
                 error: "Reserva no encontrada"

@@ -33,7 +33,15 @@ exports.addFechaBloqueada = addFechaBloqueada;
 const deleteFechaBloqueada = async (req, res) => {
     try {
         const { fecha } = req.params;
-        const result = await bloqueo_model_1.default.findOneAndDelete({ fecha: new Date(fecha) });
+        const { idNegocio } = req.query;
+        const query = { fecha: new Date(fecha) };
+        if (idNegocio) {
+            query.idNegocio = idNegocio;
+        }
+        else {
+            query.idNegocio = { $exists: false };
+        }
+        const result = await bloqueo_model_1.default.findOneAndDelete(query);
         if (!result) {
             return res.status(404).send('Fecha no encontrada');
         }

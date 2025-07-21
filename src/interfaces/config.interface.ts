@@ -1,6 +1,6 @@
 export interface IBusinessConfig {
+  idNegocio?: string;
   nombre: string;
-  tipoNegocio: 'peluqueria' | 'hotel' | 'consulta_medica' | 'general';
   duracionBase: number; // en minutos
   maxReservasPorSlot: number;
   servicios: Array<{

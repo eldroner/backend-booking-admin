@@ -2,6 +2,7 @@ import { Schema, model, Document } from 'mongoose';
 
 export interface IReserva extends Document {
   _id: string;
+  idNegocio?: string;
   usuario: {
     nombre: string;
     email: string;
@@ -21,6 +22,7 @@ export interface IReserva extends Document {
 
 const reservaSchema = new Schema<IReserva>({
   _id: { type: String, required: true },
+  idNegocio: { type: String, required: false },
   usuario: {
     nombre: { 
       type: String, 
@@ -87,7 +89,6 @@ const reservaSchema = new Schema<IReserva>({
     type: String,
     required: true,
     index: true,
-    unique: true,
     sparse: true // Permite null/undefined pero mantiene unicidad para valores existentes
   },
   notas: {
@@ -106,5 +107,9 @@ const reservaSchema = new Schema<IReserva>({
     }
   }
 });
+
+// Índice compuesto para asegurar que una reserva es única para un servicio y fecha por negocio
+// Se usa sparse: true para que el índice único solo se aplique a documentos que tengan el campo idNegocio.
+reservaSchema.index({ idNegocio: 1, fechaInicio: 1, servicio: 1 }, { unique: true, sparse: true });
 
 export const ReservaModel = model<IReserva>('Reserva', reservaSchema);

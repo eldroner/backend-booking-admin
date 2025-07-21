@@ -6,12 +6,8 @@ const timeValidator = (time: string) => /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(
 const dateValidator = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
 
 const BusinessConfigSchema = new Schema<IBusinessConfig>({ 
+  idNegocio: { type: String, required: false, unique: true, sparse: true },
   nombre: { type: String, required: [true, 'El nombre es requerido'] },
-  tipoNegocio: { 
-    type: String, 
-    enum: ['peluqueria', 'hotel', 'consulta_medica', 'general'],
-    required: [true, 'El tipo de negocio es requerido']
-  },
   duracionBase: { 
     type: Number, 
     required: true,
@@ -76,8 +72,7 @@ const BusinessConfigSchema = new Schema<IBusinessConfig>({
   }]
 }, { timestamps: true });
 
-// Índice único para asegurar solo un documento de configuración
-BusinessConfigSchema.index({}, { unique: true });
+// Índice único para asegurar solo un documento de configuración por negocio
 
 export const BusinessConfigModel = mongoose.model<IBusinessConfig>(
   'BusinessConfig', 

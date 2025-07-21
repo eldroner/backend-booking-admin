@@ -108,6 +108,5 @@ const BusinessConfigSchema = new mongoose_1.Schema({
             activo: { type: Boolean, default: true }
         }]
 }, { timestamps: true });
-// Índice único para asegurar solo un documento de configuración
-BusinessConfigSchema.index({}, { unique: true });
+// Índice único para asegurar solo un documento de configuración por negocio
 exports.BusinessConfigModel = mongoose_1.default.model('BusinessConfig', BusinessConfigSchema);
