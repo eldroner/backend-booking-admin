@@ -39,12 +39,8 @@ const mongoose_1 = __importStar(require("mongoose"));
 const timeValidator = (time) => /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
 const dateValidator = (date) => /^\d{4}-\d{2}-\d{2}$/.test(date);
 const BusinessConfigSchema = new mongoose_1.Schema({
+    idNegocio: { type: String, required: false, unique: true, sparse: true },
     nombre: { type: String, required: [true, 'El nombre es requerido'] },
-    tipoNegocio: {
-        type: String,
-        enum: ['peluqueria', 'hotel', 'consulta_medica', 'general'],
-        required: [true, 'El tipo de negocio es requerido']
-    },
     duracionBase: {
         type: Number,
         required: true,

@@ -5,7 +5,6 @@ const config_model_1 = require("../models/config.model");
 const zod_1 = require("zod");
 const ConfigSchema = zod_1.z.object({
     nombre: zod_1.z.string().min(1),
-    tipoNegocio: zod_1.z.enum(['peluqueria', 'hotel', 'consulta_medica', 'general']),
     duracionBase: zod_1.z.number().min(5),
     maxReservasPorSlot: zod_1.z.number().min(1),
     servicios: zod_1.z.array(zod_1.z.object({
@@ -34,14 +33,13 @@ const getConfig = async (req, res) => {
             // Si no existe configuración, crea una por defecto
             const defaultConfig = await config_model_1.BusinessConfigModel.create({
                 nombre: "Mi Negocio",
-                tipoNegocio: "peluqueria",
                 duracionBase: 30,
                 maxReservasPorSlot: 1,
                 servicios: [],
                 horariosNormales: Array.from({ length: 7 }, (_, dia) => ({
                     dia,
-                    tramos: dia === 6 ? [{ horaInicio: "10:00", horaFin: "14:00" }] :
-                        dia === 0 ? [] : // Domingo cerrado
+                    tramos: dia === 0 ? [{ horaInicio: "00:00", horaFin: "00:00" }] :
+                        dia === 6 ? [{ horaInicio: "10:00", horaFin: "14:00" }] :
                             [{ horaInicio: "09:00", horaFin: "13:00" },
                                 { horaInicio: "15:00", horaFin: "19:00" }]
                 })),
@@ -49,7 +47,15 @@ const getConfig = async (req, res) => {
             });
             return res.json(defaultConfig);
         }
-        res.json(config);
+        // Sanear la configuración existente para cumplir con la validación de Zod
+        const sanitizedConfig = config.toObject(); // Convertir a objeto JS plano
+        sanitizedConfig.horariosNormales = sanitizedConfig.horariosNormales.map(horarioDia => {
+            if (horarioDia.tramos.length === 0) {
+                return { ...horarioDia, tramos: [{ horaInicio: "00:00", horaFin: "00:00" }] };
+            }
+            return horarioDia;
+        });
+        res.json(sanitizedConfig);
     }
     catch (error) {
         console.error('Error getting config:', error);
