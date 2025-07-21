@@ -28,11 +28,23 @@ const ConfigSchema = z.object({
 
 export const getConfig = async (req: Request, res: Response) => {
   try {
-    const config = await BusinessConfigModel.findOne();
+    const { idNegocio } = req.query;
+    let config;
+
+    if (idNegocio) {
+      // Intenta encontrar la configuración específica del negocio
+      config = await BusinessConfigModel.findOne({ idNegocio: idNegocio as string });
+    }
+
+    if (!config) {
+      // Si no se encontró la configuración específica, busca la configuración antigua (sin idNegocio)
+      config = await BusinessConfigModel.findOne({ idNegocio: { $exists: false } });
+    }
     
     if (!config) {
-      // Si no existe configuración, crea una por defecto
+      // Si no existe ninguna configuración, crea una por defecto con idNegocio: 'default'
       const defaultConfig = await BusinessConfigModel.create({
+        idNegocio: 'default',
         nombre: "Mi Negocio",
         duracionBase: 30,
         maxReservasPorSlot: 1,
