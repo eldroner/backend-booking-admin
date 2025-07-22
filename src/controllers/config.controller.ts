@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { BusinessConfigModel } from '../models/config.model';
+import { AllowedBusinessModel } from '../models/allowed-business.model';
 import { z } from 'zod';
 
 const ConfigSchema = z.object({
@@ -29,69 +30,77 @@ const ConfigSchema = z.object({
 export const getConfig = async (req: Request, res: Response) => {
   try {
     const { idNegocio } = req.query;
-    let config;
 
-    if (idNegocio) {
-      // Intenta encontrar la configuración específica del negocio
-      config = await BusinessConfigModel.findOne({ idNegocio: idNegocio as string });
+    if (!idNegocio) {
+      return res.status(400).json({ error: 'El idNegocio es requerido' });
     }
 
-    if (!config) {
-      // Si no se encontró la configuración específica, busca la configuración antigua (sin idNegocio)
-      config = await BusinessConfigModel.findOne({ idNegocio: { $exists: false } });
+    // 1. Verificar si el negocio está en la lista blanca
+    const negocioPermitido = await AllowedBusinessModel.findOne({ idNegocio: idNegocio as string });
+    if (!negocioPermitido) {
+      return res.status(404).json({ error: 'Negocio no encontrado o no autorizado' });
     }
-    
+
+    // 2. Buscar la configuración específica del negocio
+    let config = await BusinessConfigModel.findOne({ idNegocio: idNegocio as string });
+
+    // 3. Si no hay configuración, devolver una por defecto (sin guardarla)
     if (!config) {
-      // Si no existe ninguna configuración, crea una por defecto con idNegocio: 'default'
-      const defaultConfig = await BusinessConfigModel.create({
-        idNegocio: 'default',
-        nombre: "Mi Negocio",
+      const defaultConfig = {
+        idNegocio: idNegocio as string,
+        nombre: "Mi Negocio (Sin configurar)",
         duracionBase: 30,
         maxReservasPorSlot: 1,
         servicios: [],
         horariosNormales: Array.from({ length: 7 }, (_, dia) => ({
           dia,
-          tramos: dia === 0 ? [{ horaInicio: "00:00", horaFin: "00:00" }] : 
-                 dia === 6 ? [{ horaInicio: "10:00", horaFin: "14:00" }] : 
+          tramos: dia === 0 || dia === 6 ? [] : 
                  [{ horaInicio: "09:00", horaFin: "13:00" }, 
                   { horaInicio: "15:00", horaFin: "19:00" }]
         })),
         horariosEspeciales: []
-      });
-      
+      };
       return res.json(defaultConfig);
     }
     
-    // Sanear la configuración existente para cumplir con la validación de Zod
-    const sanitizedConfig = config.toObject(); // Convertir a objeto JS plano
-    sanitizedConfig.horariosNormales = sanitizedConfig.horariosNormales.map(horarioDia => {
-      if (horarioDia.tramos.length === 0) {
-        return { ...horarioDia, tramos: [{ horaInicio: "00:00", horaFin: "00:00" }] };
-      }
-      return horarioDia;
-    });
+    // 4. Devolver la configuración existente
+    res.json(config);
 
-    res.json(sanitizedConfig);
   } catch (error) {
     console.error('Error getting config:', error);
-    res.status(500).json({ error: 'Error al obtener configuración' });
+    res.status(500).json({ error: 'Error al obtener la configuración' });
   }
 };
 
 export const updateConfig = async (req: Request, res: Response) => {
   try {
     const { idNegocio } = req.query;
-    const query = idNegocio ? { idNegocio: idNegocio as string } : { idNegocio: { $exists: false } };
 
-    // Validación con Zod
+    if (!idNegocio) {
+      return res.status(400).json({ error: 'El idNegocio es requerido' });
+    }
+
+    // 1. Verificar si el negocio está en la lista blanca
+    const negocioPermitido = await AllowedBusinessModel.findOne({ idNegocio: idNegocio as string });
+    if (!negocioPermitido) {
+      return res.status(403).json({ error: 'No tiene permisos para configurar este negocio' });
+    }
+
+    // 2. Validar los datos de entrada
     const validatedData = ConfigSchema.parse(req.body);
     
-    // Actualizar o crear la configuración
+    // 3. Actualizar o crear la configuración (upsert)
     const updatedConfig = await BusinessConfigModel.findOneAndUpdate(
-      query, 
-      { ...validatedData, ...(idNegocio && { idNegocio }) }, 
+      { idNegocio: idNegocio as string }, 
+      { ...validatedData, idNegocio: idNegocio as string }, 
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
+
+    // 4. (Opcional) Marcar el negocio como 'activo' si estaba 'pendiente'
+    if (negocioPermitido.estado === 'pendiente') {
+      negocioPermitido.estado = 'activo';
+      await negocioPermitido.save();
+    }
     
     res.json(updatedConfig);
   } catch (error) {
@@ -105,7 +114,7 @@ export const updateConfig = async (req: Request, res: Response) => {
     }
     
     res.status(500).json({ 
-      error: error instanceof Error ? error.message : 'Error actualizando configuración' 
+      error: error instanceof Error ? error.message : 'Error actualizando la configuración' 
     });
   }
 };
