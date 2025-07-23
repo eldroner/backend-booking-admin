@@ -35,6 +35,7 @@ interface ReservaResponse {
 
 interface TokenResponse {
   token: string;
+  emailContacto?: string;
 }
 
 export const createReserva = async (

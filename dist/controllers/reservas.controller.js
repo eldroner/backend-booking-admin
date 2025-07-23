@@ -7,6 +7,7 @@ exports.deleteReserva = exports.confirmarReserva = exports.getReservas = exports
 const reserva_model_1 = require("../models/reserva.model");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const uuid_1 = require("uuid");
+const allowed_business_model_1 = require("../models/allowed-business.model");
 const crypto_1 = __importDefault(require("crypto"));
 const createReserva = async (req, res) => {
     try {
@@ -46,6 +47,11 @@ const createReserva = async (req, res) => {
         if (!confirmacionToken) {
             throw new Error("Error al generar el token de confirmación");
         }
+        // Obtener el email de contacto del negocio
+        const negocioPermitido = await allowed_business_model_1.AllowedBusinessModel.findOne({ idNegocio: idNegocio });
+        if (!negocioPermitido) {
+            return res.status(404).json({ error: 'Negocio no encontrado o no autorizado' });
+        }
         // Crear objeto de reserva
         const reservaData = {
             _id: (0, uuid_1.v4)(),
@@ -83,7 +89,8 @@ const createReserva = async (req, res) => {
         const nuevaReserva = new reserva_model_1.ReservaModel(reservaData);
         const reservaGuardada = await nuevaReserva.save();
         return res.status(201).json({
-            token: reservaGuardada.confirmacionToken
+            token: reservaGuardada.confirmacionToken,
+            emailContacto: negocioPermitido.emailContacto // Añadir emailContacto aquí
         });
     }
     catch (error) {
