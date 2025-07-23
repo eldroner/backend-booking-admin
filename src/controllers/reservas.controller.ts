@@ -3,6 +3,7 @@ import { ReservaModel } from '../models/reserva.model';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { BusinessConfigModel } from '../models/config.model';
+import { AllowedBusinessModel } from '../models/allowed-business.model';
 import crypto from 'crypto';
 
 // Interfaces para tipado fuerte
@@ -89,6 +90,12 @@ export const createReserva = async (
       throw new Error("Error al generar el token de confirmación");
     }
 
+    // Obtener el email de contacto del negocio
+    const negocioPermitido = await AllowedBusinessModel.findOne({ idNegocio: idNegocio as string });
+    if (!negocioPermitido) {
+      return res.status(404).json({ error: 'Negocio no encontrado o no autorizado' });
+    }
+
     // Crear objeto de reserva
     const reservaData: any = {
       _id: uuidv4(),
@@ -129,7 +136,8 @@ export const createReserva = async (
     const reservaGuardada = await nuevaReserva.save();
 
     return res.status(201).json({
-      token: reservaGuardada.confirmacionToken
+      token: reservaGuardada.confirmacionToken,
+      emailContacto: negocioPermitido.emailContacto // Añadir emailContacto aquí
     });
 
   } catch (error) {
