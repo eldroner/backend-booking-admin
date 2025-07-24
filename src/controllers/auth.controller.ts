@@ -1,7 +1,15 @@
 import { Request, Response } from 'express';
 import { AllowedBusinessModel } from '../models/allowed-business.model';
+import { BusinessConfigModel } from '../models/config.model'; // Importar el modelo de configuración
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+
+enum BusinessType {
+  PELUQUERIA = 'peluqueria',
+  HOTEL = 'hotel',
+  CONSULTA = 'consulta_medica',
+  GENERAL = 'general'
+}
 
 export const loginByEmail = async (req: Request, res: Response) => {
   try {
@@ -33,6 +41,25 @@ export const loginByEmail = async (req: Request, res: Response) => {
         await business.save();
       }
     }
+
+    // --- NUEVA LÓGICA: Crear BusinessConfig por defecto si no existe ---
+    let businessConfig = await BusinessConfigModel.findOne({ idNegocio: business.idNegocio });
+    if (!businessConfig) {
+      const defaultConfig = {
+        idNegocio: business.idNegocio,
+        nombre: `Negocio ${business.idNegocio}`,
+        tipoNegocio: BusinessType.GENERAL,
+        duracionBase: 30,
+        maxReservasPorSlot: 1,
+        servicios: [],
+        horariosNormales: [],
+        horariosEspeciales: []
+      };
+      businessConfig = new BusinessConfigModel(defaultConfig);
+      await businessConfig.save();
+      console.log(`BusinessConfig por defecto creado para ${business.idNegocio} al iniciar sesión.`);
+    }
+    // --- FIN NUEVA LÓGICA ---
 
     if (!process.env.JWT_SECRET) {
       throw new Error('JWT_SECRET no está configurado en las variables de entorno');

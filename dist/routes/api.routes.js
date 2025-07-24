@@ -9,10 +9,13 @@ const reservas_controller_1 = require("../controllers/reservas.controller");
 const bloqueo_controller_1 = require("../controllers/bloqueo.controller");
 const servicios_controller_1 = require("../controllers/servicios.controller");
 const auth_controller_1 = require("../controllers/auth.controller"); // Importar el nuevo controlador
+const business_controller_1 = require("../controllers/business.controller"); // Importar el nuevo controlador de negocio
 const auth_middleware_1 = require("../middleware/auth.middleware"); // Importar el middleware de autenticación
 const router = express_1.default.Router();
 // Rutas de autenticación de administrador
 router.post('/admin/login-by-email', auth_controller_1.loginByEmail);
+// Rutas de gestión de negocio
+router.post('/business/initialize', auth_middleware_1.authenticateAdmin, business_controller_1.initializeBusiness);
 // Configuración del negocio (GET es público, PUT protegido)
 router.get('/config', config_controller_1.getConfig);
 router.put('/config', auth_middleware_1.authenticateAdmin, config_controller_1.updateConfig);

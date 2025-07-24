@@ -4,12 +4,16 @@ import { getReservas, createReserva, deleteReserva, confirmarReserva, confirmarR
 import { getFechasBloqueadas, addFechaBloqueada, deleteFechaBloqueada } from '../controllers/bloqueo.controller';
 import { getServicios } from '../controllers/servicios.controller';
 import { loginByEmail } from '../controllers/auth.controller'; // Importar el nuevo controlador
+import { initializeBusiness } from '../controllers/business.controller'; // Importar el nuevo controlador de negocio
 import { authenticateAdmin } from '../middleware/auth.middleware'; // Importar el middleware de autenticación
 
 const router = express.Router();
 
 // Rutas de autenticación de administrador
 router.post('/admin/login-by-email', loginByEmail);
+
+// Rutas de gestión de negocio
+router.post('/business/initialize', authenticateAdmin, initializeBusiness);
 
 // Configuración del negocio (GET es público, PUT protegido)
 router.get('/config', getConfig);
