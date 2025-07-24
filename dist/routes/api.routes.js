@@ -7,20 +7,27 @@ const express_1 = __importDefault(require("express"));
 const config_controller_1 = require("../controllers/config.controller");
 const reservas_controller_1 = require("../controllers/reservas.controller");
 const bloqueo_controller_1 = require("../controllers/bloqueo.controller");
+const servicios_controller_1 = require("../controllers/servicios.controller");
+const auth_controller_1 = require("../controllers/auth.controller"); // Importar el nuevo controlador
+const auth_middleware_1 = require("../middleware/auth.middleware"); // Importar el middleware de autenticación
 const router = express_1.default.Router();
-// Configuración del negocio
+// Rutas de autenticación de administrador
+router.post('/admin/login-by-email', auth_controller_1.loginByEmail);
+// Configuración del negocio (GET es público, PUT protegido)
 router.get('/config', config_controller_1.getConfig);
-router.put('/config', config_controller_1.updateConfig); // Solo necesitamos PUT para crear/actualizar
-// Reservas
+router.put('/config', auth_middleware_1.authenticateAdmin, config_controller_1.updateConfig);
+// Servicios (públicos)
+router.get('/servicios', servicios_controller_1.getServicios);
+// Reservas (algunas protegidas)
 router.get('/reservas', reservas_controller_1.getReservas);
 router.post('/reservas', reservas_controller_1.createReserva);
-router.post('/reservas/admin', reservas_controller_1.addReservaAdmin);
+router.post('/reservas/admin', auth_middleware_1.authenticateAdmin, reservas_controller_1.addReservaAdmin);
 router.delete('/reservas/:id', reservas_controller_1.deleteReserva);
 router.get('/reservas/confirmar/:token', reservas_controller_1.confirmarReserva);
 router.post('/reservas/confirmar-definitiva/:token', reservas_controller_1.confirmarReservaDefinitiva);
-router.put('/reservas/:id/confirm', reservas_controller_1.confirmarReservaAdmin);
-// Fechas bloqueadas
+router.put('/reservas/:id/confirm', auth_middleware_1.authenticateAdmin, reservas_controller_1.confirmarReservaAdmin);
+// Fechas bloqueadas (GET es público, POST/DELETE protegidos)
 router.get('/bloqueo', bloqueo_controller_1.getFechasBloqueadas);
-router.post('/bloqueo', bloqueo_controller_1.addFechaBloqueada);
-router.delete('/bloqueo/:fecha', bloqueo_controller_1.deleteFechaBloqueada);
+router.post('/bloqueo', auth_middleware_1.authenticateAdmin, bloqueo_controller_1.addFechaBloqueada);
+router.delete('/bloqueo/:fecha', auth_middleware_1.authenticateAdmin, bloqueo_controller_1.deleteFechaBloqueada);
 exports.default = router;

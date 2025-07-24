@@ -2,26 +2,35 @@ import express from 'express';
 import { getConfig, updateConfig } from '../controllers/config.controller';
 import { getReservas, createReserva, deleteReserva, confirmarReserva, confirmarReservaDefinitiva, addReservaAdmin, confirmarReservaAdmin } from '../controllers/reservas.controller';
 import { getFechasBloqueadas, addFechaBloqueada, deleteFechaBloqueada } from '../controllers/bloqueo.controller';
+import { getServicios } from '../controllers/servicios.controller';
+import { loginByEmail } from '../controllers/auth.controller'; // Importar el nuevo controlador
+import { authenticateAdmin } from '../middleware/auth.middleware'; // Importar el middleware de autenticación
 
 const router = express.Router();
 
-// Configuración del negocio
-router.get('/config', getConfig);
-router.put('/config', updateConfig); // Solo necesitamos PUT para crear/actualizar
+// Rutas de autenticación de administrador
+router.post('/admin/login-by-email', loginByEmail);
 
-// Reservas
+// Configuración del negocio (GET es público, PUT protegido)
+router.get('/config', getConfig);
+router.put('/config', authenticateAdmin, updateConfig);
+
+// Servicios (públicos)
+router.get('/servicios', getServicios);
+
+// Reservas (algunas protegidas)
 router.get('/reservas', getReservas);
 router.post('/reservas', createReserva);
-router.post('/reservas/admin', addReservaAdmin);
+router.post('/reservas/admin', authenticateAdmin, addReservaAdmin);
 
 router.delete('/reservas/:id', deleteReserva);
 router.get('/reservas/confirmar/:token', confirmarReserva);
 router.post('/reservas/confirmar-definitiva/:token', confirmarReservaDefinitiva);
-router.put('/reservas/:id/confirm', confirmarReservaAdmin);
+router.put('/reservas/:id/confirm', authenticateAdmin, confirmarReservaAdmin);
 
-// Fechas bloqueadas
+// Fechas bloqueadas (GET es público, POST/DELETE protegidos)
 router.get('/bloqueo', getFechasBloqueadas);
-router.post('/bloqueo', addFechaBloqueada);
-router.delete('/bloqueo/:fecha', deleteFechaBloqueada);
+router.post('/bloqueo', authenticateAdmin, addFechaBloqueada);
+router.delete('/bloqueo/:fecha', authenticateAdmin, deleteFechaBloqueada);
 
 export default router;
