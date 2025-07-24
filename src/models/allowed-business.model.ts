@@ -4,6 +4,7 @@ import { Schema, model, Document } from 'mongoose';
 export interface IAllowedBusiness extends Document {
   idNegocio: string;
   emailContacto: string;
+  password?: string; // Campo de contraseña opcional
   estado: 'pendiente' | 'activo';
   fechaCreacion: Date;
 }
@@ -21,6 +22,10 @@ const AllowedBusinessSchema = new Schema<IAllowedBusiness>({
     required: true,
     trim: true,
     lowercase: true 
+  },
+  password: { // Definición del campo de contraseña en el esquema
+    type: String,
+    required: false // Opcional por ahora
   },
   estado: { 
     type: String, 

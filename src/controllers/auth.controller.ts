@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import { AllowedBusinessModel } from '../models/allowed-business.model';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 
 export const loginByEmail = async (req: Request, res: Response) => {
   try {
-    const { emailContacto } = req.body;
+    const { emailContacto, password } = req.body;
 
     if (!emailContacto) {
       return res.status(400).json({ message: 'El email de contacto es requerido' });
@@ -14,6 +15,23 @@ export const loginByEmail = async (req: Request, res: Response) => {
 
     if (!business) {
       return res.status(401).json({ message: 'Email no registrado como administrador' });
+    }
+
+    // Lógica de verificación de contraseña
+    if (business.password) { // Si el negocio tiene una contraseña establecida
+      if (!password) {
+        return res.status(400).json({ message: 'Contraseña requerida' });
+      }
+      const isPasswordValid = await bcrypt.compare(password, business.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Contraseña incorrecta' });
+      }
+    } else { // Si el negocio no tiene contraseña, y se proporciona una, la guardamos
+      if (password) {
+        const hashedPassword = await bcrypt.hash(password, 10); // 10 es el saltRounds
+        business.password = hashedPassword;
+        await business.save();
+      }
     }
 
     if (!process.env.JWT_SECRET) {
