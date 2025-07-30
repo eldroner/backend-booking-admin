@@ -85,7 +85,7 @@ export const createReserva = async (
         servicio: reservaBody.servicio
       },
       process.env.JWT_SECRET,
-      { expiresIn: '2d' }
+      { expiresIn: '4h' }
     );
 
     if (!confirmacionToken) {

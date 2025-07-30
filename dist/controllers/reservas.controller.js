@@ -43,7 +43,7 @@ const createReserva = async (req, res) => {
             email: reservaBody.usuario.email,
             fecha: fechaInicio.toISOString(),
             servicio: reservaBody.servicio
-        }, process.env.JWT_SECRET, { expiresIn: '2d' });
+        }, process.env.JWT_SECRET, { expiresIn: '4h' });
         if (!confirmacionToken) {
             throw new Error("Error al generar el token de confirmación");
         }

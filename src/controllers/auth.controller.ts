@@ -68,7 +68,7 @@ export const loginByEmail = async (req: Request, res: Response) => {
     const token = jwt.sign(
       { idNegocio: business.idNegocio, emailContacto: business.emailContacto },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '4h' }
     );
 
     res.json({ token, idNegocio: business.idNegocio });
