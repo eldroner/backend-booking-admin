@@ -1,6 +1,6 @@
 import express from 'express';
 import { getConfig, updateConfig } from '../controllers/config.controller';
-import { getReservas, createReserva, deleteReserva, confirmarReserva, confirmarReservaDefinitiva, addReservaAdmin, confirmarReservaAdmin } from '../controllers/reservas.controller';
+import { getReservas, createReserva, deleteReserva, confirmarReserva, confirmarReservaDefinitiva, addReservaAdmin, confirmarReservaAdmin, cancelarReserva, cancelarReservaPorToken } from '../controllers/reservas.controller';
 import { getFechasBloqueadas, addFechaBloqueada, deleteFechaBloqueada } from '../controllers/bloqueo.controller';
 import { getServicios } from '../controllers/servicios.controller';
 import { loginByEmail } from '../controllers/auth.controller'; // Importar el nuevo controlador
@@ -31,6 +31,8 @@ router.delete('/reservas/:id', deleteReserva);
 router.get('/reservas/confirmar/:token', confirmarReserva);
 router.post('/reservas/confirmar-definitiva/:token', confirmarReservaDefinitiva);
 router.put('/reservas/:id/confirm', authenticateAdmin, confirmarReservaAdmin);
+router.patch('/reservas/:id/cancelar', authenticateAdmin, cancelarReserva);
+router.post('/reservas/cancelar-por-token/:token', cancelarReservaPorToken);
 
 // Fechas bloqueadas (GET es público, POST/DELETE protegidos)
 router.get('/bloqueo', getFechasBloqueadas);

@@ -29,6 +29,8 @@ router.delete('/reservas/:id', reservas_controller_1.deleteReserva);
 router.get('/reservas/confirmar/:token', reservas_controller_1.confirmarReserva);
 router.post('/reservas/confirmar-definitiva/:token', reservas_controller_1.confirmarReservaDefinitiva);
 router.put('/reservas/:id/confirm', auth_middleware_1.authenticateAdmin, reservas_controller_1.confirmarReservaAdmin);
+router.patch('/reservas/:id/cancelar', auth_middleware_1.authenticateAdmin, reservas_controller_1.cancelarReserva);
+router.post('/reservas/cancelar-por-token/:token', reservas_controller_1.cancelarReservaPorToken);
 // Fechas bloqueadas (GET es público, POST/DELETE protegidos)
 router.get('/bloqueo', bloqueo_controller_1.getFechasBloqueadas);
 router.post('/bloqueo', auth_middleware_1.authenticateAdmin, bloqueo_controller_1.addFechaBloqueada);

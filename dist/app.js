@@ -43,7 +43,7 @@ app.use((0, cors_1.default)({
             callback(new Error('Origen CORS no permitido'));
         }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express_1.default.json({ limit: '10kb' })); // Limitar tamaño de payload

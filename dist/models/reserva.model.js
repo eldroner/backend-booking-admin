@@ -72,7 +72,13 @@ const reservaSchema = new mongoose_1.Schema({
         type: String,
         required: true,
         index: true,
-        sparse: true // Permite null/undefined pero mantiene unicidad para valores existentes
+        sparse: true
+    },
+    cancellation_token: {
+        type: mongoose_1.Schema.Types.String,
+        required: false,
+        index: true,
+        sparse: true
     },
     notas: {
         type: String,

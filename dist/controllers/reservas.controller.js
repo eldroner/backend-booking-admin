@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteReserva = exports.confirmarReserva = exports.getReservas = exports.confirmarReservaAdmin = exports.confirmarReservaDefinitiva = exports.addReservaAdmin = exports.createReserva = void 0;
+exports.cancelarReservaPorToken = exports.cancelarReserva = exports.deleteReserva = exports.confirmarReserva = exports.getReservas = exports.confirmarReservaAdmin = exports.confirmarReservaDefinitiva = exports.addReservaAdmin = exports.createReserva = void 0;
 const reserva_model_1 = require("../models/reserva.model");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const uuid_1 = require("uuid");
@@ -47,6 +47,7 @@ const createReserva = async (req, res) => {
         if (!confirmacionToken) {
             throw new Error("Error al generar el token de confirmación");
         }
+        const cancellationToken = crypto_1.default.randomBytes(32).toString('hex');
         // Obtener el email de contacto del negocio
         const negocioPermitido = await allowed_business_model_1.AllowedBusinessModel.findOne({ idNegocio: idNegocio });
         if (!negocioPermitido) {
@@ -65,6 +66,7 @@ const createReserva = async (req, res) => {
             servicio: reservaBody.servicio,
             estado: 'pendiente_email',
             confirmacionToken,
+            cancellation_token: cancellationToken,
             duracion: reservaBody.duracion || 30,
             expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000)
         };
@@ -90,7 +92,8 @@ const createReserva = async (req, res) => {
         const reservaGuardada = await nuevaReserva.save();
         return res.status(201).json({
             token: reservaGuardada.confirmacionToken,
-            emailContacto: negocioPermitido.emailContacto // Añadir emailContacto aquí
+            emailContacto: negocioPermitido.emailContacto,
+            cancellationToken: reservaGuardada.cancellation_token
         });
     }
     catch (error) {
@@ -171,7 +174,7 @@ const getReservas = async (req, res) => {
             query.estado = estado;
         }
         else {
-            query.estado = { $in: ['pendiente', 'pendiente_email', 'confirmada'] };
+            query.estado = { $in: ['pendiente', 'pendiente_email', 'confirmada', 'cancelada'] };
         }
         if (fecha) {
             if (isNaN(Date.parse(fecha))) {
@@ -291,3 +294,33 @@ const deleteReserva = async (req, res) => {
     }
 };
 exports.deleteReserva = deleteReserva;
+const cancelarReserva = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const reserva = await reserva_model_1.ReservaModel.findByIdAndUpdate(id, { $set: { estado: 'cancelada' } }, { new: true });
+        if (!reserva) {
+            return res.status(404).json({ message: 'Reserva no encontrada' });
+        }
+        res.json(reserva);
+    }
+    catch (error) {
+        console.error('Error al cancelar reserva por admin:', error);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
+exports.cancelarReserva = cancelarReserva;
+const cancelarReservaPorToken = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const reserva = await reserva_model_1.ReservaModel.findOneAndUpdate({ cancellation_token: token, estado: { $ne: 'cancelada' } }, { $set: { estado: 'cancelada' } }, { new: true });
+        if (!reserva) {
+            return res.status(404).json({ message: 'Reserva no encontrada o ya cancelada' });
+        }
+        res.json({ success: true, message: 'Reserva cancelada correctamente' });
+    }
+    catch (error) {
+        console.error('Error al cancelar reserva por token:', error);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
+exports.cancelarReservaPorToken = cancelarReservaPorToken;

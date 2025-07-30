@@ -36,6 +36,7 @@ interface ReservaResponse {
 interface TokenResponse {
   token: string;
   emailContacto?: string;
+  cancellationToken?: string;
 }
 
 export const createReserva = async (
@@ -91,6 +92,8 @@ export const createReserva = async (
       throw new Error("Error al generar el token de confirmación");
     }
 
+    const cancellationToken = crypto.randomBytes(32).toString('hex');
+
     // Obtener el email de contacto del negocio
     const negocioPermitido = await AllowedBusinessModel.findOne({ idNegocio: idNegocio as string });
     if (!negocioPermitido) {
@@ -110,6 +113,7 @@ export const createReserva = async (
       servicio: reservaBody.servicio,
       estado: 'pendiente_email',
       confirmacionToken,
+      cancellation_token: cancellationToken,
       duracion: reservaBody.duracion || 30,
       expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000)
     };
@@ -138,7 +142,8 @@ export const createReserva = async (
 
     return res.status(201).json({
       token: reservaGuardada.confirmacionToken,
-      emailContacto: negocioPermitido.emailContacto // Añadir emailContacto aquí
+      emailContacto: negocioPermitido.emailContacto,
+      cancellationToken: (reservaGuardada as any).cancellation_token
     });
 
   } catch (error) {
@@ -233,7 +238,7 @@ export const getReservas = async (
     if (estado && typeof estado === 'string') {
       query.estado = estado;
     } else {
-      query.estado = { $in: ['pendiente', 'pendiente_email', 'confirmada'] };
+      query.estado = { $in: ['pendiente', 'pendiente_email', 'confirmada', 'cancelada'] };
     }
 
     if (fecha) {
@@ -374,5 +379,46 @@ export const deleteReserva = async (
     return res.status(500).json({
       error: "Error al eliminar reserva"
     });
+  }
+};
+
+export const cancelarReserva = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const reserva = await ReservaModel.findByIdAndUpdate(
+      id,
+      { $set: { estado: 'cancelada' } },
+      { new: true }
+    );
+
+    if (!reserva) {
+      return res.status(404).json({ message: 'Reserva no encontrada' });
+    }
+
+    res.json(reserva);
+  } catch (error) {
+    console.error('Error al cancelar reserva por admin:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+export const cancelarReservaPorToken = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+
+    const reserva = await ReservaModel.findOneAndUpdate(
+      { cancellation_token: token, estado: { $ne: 'cancelada' } },
+      { $set: { estado: 'cancelada' } },
+      { new: true }
+    );
+
+    if (!reserva) {
+      return res.status(404).json({ message: 'Reserva no encontrada o ya cancelada' });
+    }
+
+    res.json({ success: true, message: 'Reserva cancelada correctamente' });
+  } catch (error) {
+    console.error('Error al cancelar reserva por token:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 };

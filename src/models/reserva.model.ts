@@ -2,6 +2,7 @@ import { Schema, model, Document } from 'mongoose';
 
 export interface IReserva extends Document {
   _id: string;
+  id?: string; // Añadido para compatibilidad con TypeScript y Mongoose virtual 'id'
   idNegocio?: string;
   usuario: {
     nombre: string;
@@ -85,21 +86,27 @@ const reservaSchema = new Schema<IReserva>({
     enum: ['pendiente', 'pendiente_email', 'confirmada', 'cancelada'],
     default: 'pendiente_email' // Cambiado a 'pendiente' como estado inicial
   },
-  confirmacionToken: { // Nuevo campo añadido
+  confirmacionToken: { 
     type: String,
     required: true,
     index: true,
-    sparse: true // Permite null/undefined pero mantiene unicidad para valores existentes
+    sparse: true 
+  },
+  cancellation_token: {
+    type: Schema.Types.String,
+    required: false,
+    index: true,
+    sparse: true
   },
   notas: {
     type: String,
     trim: true,
     maxlength: [500, 'Las notas no pueden exceder los 500 caracteres']
   }
-}, {
+} as any, {
   timestamps: true,
   toJSON: {
-    transform: (doc, ret) => {
+    transform: (doc, ret: any) => {
       ret.id = ret._id;
       delete ret._id;
       delete ret.__v;
