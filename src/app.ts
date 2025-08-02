@@ -1,5 +1,15 @@
 import mongoose from 'mongoose';
 import 'dotenv/config';
+import cloudinary from './config/cloudinary'; // Importar el objeto cloudinary
+
+// Configurar Cloudinary después de que dotenv haya cargado las variables
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+console.log('CLOUDINARY_API_KEY en app.ts:', process.env.CLOUDINARY_API_KEY);
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';

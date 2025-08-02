@@ -5,6 +5,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 require("dotenv/config");
+const cloudinary_1 = __importDefault(require("./config/cloudinary")); // Importar el objeto cloudinary
+// Configurar Cloudinary después de que dotenv haya cargado las variables
+cloudinary_1.default.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+console.log('CLOUDINARY_API_KEY en app.ts:', process.env.CLOUDINARY_API_KEY);
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const morgan_1 = __importDefault(require("morgan"));
