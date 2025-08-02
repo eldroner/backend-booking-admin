@@ -25,7 +25,10 @@ const ConfigSchema = zod_1.z.object({
         horaInicio: zod_1.z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/),
         horaFin: zod_1.z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/),
         activo: zod_1.z.boolean()
-    })).optional()
+    })).optional(),
+    direccion: zod_1.z.string().optional(),
+    descripcion: zod_1.z.string().optional(),
+    fotoUrls: zod_1.z.array(zod_1.z.string().url()).optional(),
 });
 const getConfig = async (req, res) => {
     try {
@@ -54,7 +57,10 @@ const getConfig = async (req, res) => {
                         [{ horaInicio: "09:00", horaFin: "13:00" },
                             { horaInicio: "15:00", horaFin: "19:00" }]
                 })),
-                horariosEspeciales: []
+                horariosEspeciales: [],
+                direccion: "",
+                descripcion: "",
+                fotoUrls: []
             };
             return res.json(defaultConfig);
         }

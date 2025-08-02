@@ -69,7 +69,10 @@ const BusinessConfigSchema = new Schema<IBusinessConfig>({
       validate: timeValidator 
     },
     activo: { type: Boolean, default: true }
-  }]
+  }],
+  direccion: { type: String },
+  descripcion: { type: String },
+  fotoUrls: [{ type: String }]
 }, { timestamps: true });
 
 // Índice único para asegurar solo un documento de configuración por negocio

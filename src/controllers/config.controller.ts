@@ -24,7 +24,10 @@ const ConfigSchema = z.object({
     horaInicio: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/),
     horaFin: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/),
     activo: z.boolean()
-  })).optional()
+  })).optional(),
+  direccion: z.string().optional(),
+  descripcion: z.string().optional(),
+  fotoUrls: z.array(z.string().url()).optional(),
 });
 
 export const getConfig = async (req: Request, res: Response) => {
@@ -58,7 +61,10 @@ export const getConfig = async (req: Request, res: Response) => {
                  [{ horaInicio: "09:00", horaFin: "13:00" }, 
                   { horaInicio: "15:00", horaFin: "19:00" }]
         })),
-        horariosEspeciales: []
+        horariosEspeciales: [],
+        direccion: "",
+        descripcion: "",
+        fotoUrls: []
       };
       return res.json(defaultConfig);
     }

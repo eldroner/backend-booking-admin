@@ -102,7 +102,10 @@ const BusinessConfigSchema = new mongoose_1.Schema({
                 validate: timeValidator
             },
             activo: { type: Boolean, default: true }
-        }]
+        }],
+    direccion: { type: String },
+    descripcion: { type: String },
+    fotoUrls: [{ type: String }]
 }, { timestamps: true });
 // Índice único para asegurar solo un documento de configuración por negocio
 exports.BusinessConfigModel = mongoose_1.default.model('BusinessConfig', BusinessConfigSchema);

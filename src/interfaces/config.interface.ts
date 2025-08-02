@@ -1,29 +1,37 @@
-export interface IBusinessConfig {
-  idNegocio?: string;
+import { Document } from 'mongoose';
+
+export interface IServicio {
+  id: string;
   nombre: string;
-  duracionBase: number; // en minutos
-  maxReservasPorSlot: number;
-  servicios: Array<{
-    id: string;
-    nombre: string;
-    duracion: number; // en minutos
-    precio?: number; // opcional
-    descripcion?: string; // opcional
-  }>;
-  horariosNormales: Array<{
-    dia: number; // 0 (Domingo) a 6 (Sábado)
-    tramos: Array<{
-      horaInicio: string; // formato "HH:MM"
-      horaFin: string;    // formato "HH:MM"
-    }>;
-  }>;
-  horariosEspeciales: Array<{
-    fecha: string; // formato "YYYY-MM-DD"
-    horaInicio: string;
-    horaFin: string;
-    activo: boolean;
-    motivo?: string; // opcional
-  }>;
-  // Campos adicionales para futuras expansiones
-  metadata?: Record<string, any>;
+  duracion: number; // Duración en minutos
+}
+
+export interface ITramoHorario {
+  horaInicio: string; // HH:MM
+  horaFin: string;    // HH:MM
+}
+
+export interface IHorarioNormal {
+  dia: number; // 0 (domingo) a 6 (sábado)
+  tramos: ITramoHorario[];
+}
+
+export interface IHorarioEspecial {
+  fecha: string; // YYYY-MM-DD
+  horaInicio: string; // HH:MM
+  horaFin: string;    // HH:MM
+  activo: boolean; // Para activar/desactivar un horario especial
+}
+
+export interface IBusinessConfig extends Document {
+  idNegocio?: string; // Opcional para la configuración por defecto
+  nombre: string;
+  duracionBase: number; // Duración base de los slots en minutos
+  maxReservasPorSlot: number; // Máximo de reservas permitidas por slot
+  servicios: IServicio[];
+  horariosNormales: IHorarioNormal[];
+  horariosEspeciales: IHorarioEspecial[];
+  direccion?: string;
+  descripcion?: string;
+  fotoUrls?: string[];
 }
