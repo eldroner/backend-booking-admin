@@ -60,7 +60,7 @@ const getConfig = async (req, res) => {
                 horariosEspeciales: [],
                 direccion: "",
                 descripcion: "",
-                fotoUrls: []
+                fotoUrls: ["https://github.com/eldroner/mis-assets/main/business.jpg"]
             };
             return res.json(defaultConfig);
         }
