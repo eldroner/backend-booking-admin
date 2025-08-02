@@ -125,4 +125,17 @@ export const updateConfig = async (req: Request, res: Response) => {
   }
 };
 
+export const getGoogleMapsApiKey = (req: Request, res: Response) => {
+  try {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      throw new Error('Google Maps API Key no encontrada en el servidor');
+    }
+    res.json({ apiKey });
+  } catch (error) {
+     console.error('Error fetching Google Maps API Key:', error);
+     res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
 // Eliminar saveConfig ya que updateConfig hace lo mismo con PUT

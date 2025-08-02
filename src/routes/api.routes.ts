@@ -1,5 +1,5 @@
 import express from 'express';
-import { getConfig, updateConfig } from '../controllers/config.controller';
+import { getConfig, updateConfig, getGoogleMapsApiKey } from '../controllers/config.controller';
 import { getReservas, createReserva, deleteReserva, confirmarReserva, confirmarReservaDefinitiva, addReservaAdmin, confirmarReservaAdmin, cancelarReserva, cancelarReservaPorToken } from '../controllers/reservas.controller';
 import { getFechasBloqueadas, addFechaBloqueada, deleteFechaBloqueada } from '../controllers/bloqueo.controller';
 import { getServicios } from '../controllers/servicios.controller';
@@ -18,6 +18,7 @@ router.post('/business/initialize', authenticateAdmin, initializeBusiness);
 // Configuración del negocio (GET es público, PUT protegido)
 router.get('/config', getConfig);
 router.put('/config', authenticateAdmin, updateConfig);
+router.get('/config/maps-api-key', getGoogleMapsApiKey);
 
 // Servicios (públicos)
 router.get('/servicios', getServicios);
