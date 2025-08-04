@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 const ConfigSchema = z.object({
   nombre: z.string().min(1),
+  slogan: z.string().max(150).optional(),
   duracionBase: z.number().min(5),
   maxReservasPorSlot: z.number().min(1),
   servicios: z.array(z.object({

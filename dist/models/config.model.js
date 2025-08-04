@@ -41,6 +41,7 @@ const dateValidator = (date) => /^\d{4}-\d{2}-\d{2}$/.test(date);
 const BusinessConfigSchema = new mongoose_1.Schema({
     idNegocio: { type: String, required: false, unique: true, sparse: true },
     nombre: { type: String, required: [true, 'El nombre es requerido'] },
+    slogan: { type: String, maxlength: [150, 'El eslogan no puede exceder los 150 caracteres'] },
     duracionBase: {
         type: Number,
         required: true,

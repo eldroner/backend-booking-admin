@@ -6,6 +6,7 @@ const allowed_business_model_1 = require("../models/allowed-business.model");
 const zod_1 = require("zod");
 const ConfigSchema = zod_1.z.object({
     nombre: zod_1.z.string().min(1),
+    slogan: zod_1.z.string().max(150).optional(),
     duracionBase: zod_1.z.number().min(5),
     maxReservasPorSlot: zod_1.z.number().min(1),
     servicios: zod_1.z.array(zod_1.z.object({
