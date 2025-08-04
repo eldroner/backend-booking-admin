@@ -42,6 +42,7 @@ const BusinessConfigSchema = new mongoose_1.Schema({
     idNegocio: { type: String, required: false, unique: true, sparse: true },
     nombre: { type: String, required: [true, 'El nombre es requerido'] },
     slogan: { type: String, maxlength: [150, 'El eslogan no puede exceder los 150 caracteres'] },
+    telefono: { type: String },
     duracionBase: {
         type: Number,
         required: true,

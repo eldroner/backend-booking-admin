@@ -29,6 +29,7 @@ const ConfigSchema = z.object({
   direccion: z.string().optional(),
   descripcion: z.string().optional(),
   fotoUrls: z.array(z.string().url()).optional(),
+  telefono: z.string().optional(),
 });
 
 export const getConfig = async (req: Request, res: Response) => {

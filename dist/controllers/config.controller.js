@@ -30,6 +30,7 @@ const ConfigSchema = zod_1.z.object({
     direccion: zod_1.z.string().optional(),
     descripcion: zod_1.z.string().optional(),
     fotoUrls: zod_1.z.array(zod_1.z.string().url()).optional(),
+    telefono: zod_1.z.string().optional(),
 });
 const getConfig = async (req, res) => {
     try {

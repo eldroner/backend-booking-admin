@@ -27,6 +27,7 @@ export interface IBusinessConfig extends Document {
   idNegocio?: string; // Opcional para la configuración por defecto
   nombre: string;
   slogan?: string;
+  telefono?: string;
   duracionBase: number; // Duración base de los slots en minutos
   maxReservasPorSlot: number; // Máximo de reservas permitidas por slot
   servicios: IServicio[];
