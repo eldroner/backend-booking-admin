@@ -6,10 +6,10 @@ import { getServicios } from '../controllers/servicios.controller';
 import { loginByEmail } from '../controllers/auth.controller'; // Importar el nuevo controlador
 import { initializeBusiness } from '../controllers/business.controller'; // Importar el nuevo controlador de negocio
 import { authenticateAdmin } from '../middleware/auth.middleware'; // Importar el middleware de autenticación
-import { uploadImage } from '../controllers/upload.controller';
+import { uploadImage, uploadImages } from '../controllers/upload.controller';
 import multer = require('multer');
 
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
 // Rutas de autenticación de administrador
@@ -25,6 +25,7 @@ router.get('/config/maps-api-key', getGoogleMapsApiKey);
 
 // Rutas de subida de imágenes
 router.post('/upload/image', authenticateAdmin, upload.single('image'), uploadImage);
+router.post('/upload/images', authenticateAdmin, upload.array('images', 10), uploadImages);
 
 // Servicios (públicos)
 router.get('/servicios', getServicios);

@@ -13,7 +13,7 @@ const business_controller_1 = require("../controllers/business.controller"); // 
 const auth_middleware_1 = require("../middleware/auth.middleware"); // Importar el middleware de autenticación
 const upload_controller_1 = require("../controllers/upload.controller");
 const multer = require("multer");
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ storage: multer.memoryStorage() });
 const router = express_1.default.Router();
 // Rutas de autenticación de administrador
 router.post('/admin/login-by-email', auth_controller_1.loginByEmail);
@@ -25,6 +25,7 @@ router.put('/config', auth_middleware_1.authenticateAdmin, config_controller_1.u
 router.get('/config/maps-api-key', config_controller_1.getGoogleMapsApiKey);
 // Rutas de subida de imágenes
 router.post('/upload/image', auth_middleware_1.authenticateAdmin, upload.single('image'), upload_controller_1.uploadImage);
+router.post('/upload/images', auth_middleware_1.authenticateAdmin, upload.array('images', 10), upload_controller_1.uploadImages);
 // Servicios (públicos)
 router.get('/servicios', servicios_controller_1.getServicios);
 // Reservas (algunas protegidas)
