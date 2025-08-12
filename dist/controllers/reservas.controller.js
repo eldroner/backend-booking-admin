@@ -148,7 +148,7 @@ exports.confirmarReservaDefinitiva = confirmarReservaDefinitiva;
 const confirmarReservaAdmin = async (req, res) => {
     try {
         const { id } = req.params;
-        const reserva = await reserva_model_1.ReservaModel.findByIdAndUpdate(id, { $set: { estado: 'confirmada', fechaConfirmacion: new Date() } }, { new: true });
+        const reserva = await reserva_model_1.ReservaModel.findByIdAndUpdate(id, { $set: { estado: 'confirmada' }, $unset: { expiresAt: 1 } }, { new: true });
         if (!reserva) {
             return res.status(404).json({ message: 'Reserva no encontrada' });
         }

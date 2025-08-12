@@ -205,7 +205,7 @@ export const confirmarReservaAdmin = async (req: Request, res: Response) => {
     const { id } = req.params;
     const reserva = await ReservaModel.findByIdAndUpdate(
       id,
-      { $set: { estado: 'confirmada', fechaConfirmacion: new Date() } },
+      { $set: { estado: 'confirmada' }, $unset: { expiresAt: 1 } },
       { new: true }
     );
 
