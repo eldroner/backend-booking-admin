@@ -133,7 +133,7 @@ const confirmarReservaDefinitiva = async (req, res) => {
             confirmacionToken: token,
             estado: 'pendiente_email',
             expiresAt: { $gt: new Date() }
-        }, { $set: { estado: 'confirmada' } }, { new: true });
+        }, { $set: { estado: 'confirmada' }, $unset: { expiresAt: 1 } }, { new: true });
         if (!reserva) {
             return res.status(404).json({ error: "Reserva no encontrada o ya confirmada" });
         }
@@ -240,7 +240,7 @@ const confirmarReserva = async (req, res) => {
             fechaInicio: new Date(decoded.fecha),
             servicio: decoded.servicio,
             estado: 'pendiente_email'
-        }, { $set: { estado: 'confirmada' } }, { new: true });
+        }, { $set: { estado: 'confirmada' }, $unset: { expiresAt: 1 } }, { new: true });
         if (!reserva) {
             console.error('Reserva no encontrada con estos datos:', {
                 email: decoded.email,

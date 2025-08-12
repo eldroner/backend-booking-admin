@@ -185,7 +185,7 @@ export const confirmarReservaDefinitiva = async (req: Request, res: Response) =>
         estado: 'pendiente_email',
         expiresAt: { $gt: new Date() }
       },
-      { $set: { estado: 'confirmada' } },
+      { $set: { estado: 'confirmada' }, $unset: { expiresAt: 1 } },
       { new: true }
     );
 
@@ -321,7 +321,7 @@ export const confirmarReserva = async (req: Request, res: Response) => {
         servicio: decoded.servicio,
         estado: 'pendiente_email'
       },
-      { $set: { estado: 'confirmada' } },
+      { $set: { estado: 'confirmada' }, $unset: { expiresAt: 1 } },
       { new: true }
     );
 
