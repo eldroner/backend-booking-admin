@@ -51,7 +51,7 @@ export const sendCancellationEmail = async (data: CancellationEmailData) => {
 
       <p style="font-size: 16px; font-weight: bold;">
         📅 <span style="color: #444;">${data.booking_date}</span><br>
-        🕒 <span style="color: #444;">${data.booking_time}</span>
+        🕓 <span style="color: #444;">${data.booking_time}</span>
       </p>
 
       <p>Si todavía deseas realizar este servicio, puedes crear una nueva reserva haciendo clic en el siguiente botón:</p>

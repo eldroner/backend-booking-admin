@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getGoogleMapsApiKey = exports.updateConfig = exports.getConfig = void 0;
+exports.getGoogleMapsMapId = exports.getGoogleMapsApiKey = exports.updateConfig = exports.getConfig = void 0;
 const config_model_1 = require("../models/config.model");
 const allowed_business_model_1 = require("../models/allowed-business.model");
 const zod_1 = require("zod");
@@ -125,4 +125,18 @@ const getGoogleMapsApiKey = (req, res) => {
     }
 };
 exports.getGoogleMapsApiKey = getGoogleMapsApiKey;
+const getGoogleMapsMapId = (req, res) => {
+    try {
+        const mapId = process.env.GOOGLE_MAPS_MAP_ID;
+        if (!mapId) {
+            throw new Error('Google Maps Map ID no encontrado en el servidor');
+        }
+        res.json({ mapId });
+    }
+    catch (error) {
+        console.error('Error fetching Google Maps Map ID:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+};
+exports.getGoogleMapsMapId = getGoogleMapsMapId;
 // Eliminar saveConfig ya que updateConfig hace lo mismo con PUT

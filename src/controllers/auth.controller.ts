@@ -57,7 +57,6 @@ export const loginByEmail = async (req: Request, res: Response) => {
       };
       businessConfig = new BusinessConfigModel(defaultConfig);
       await businessConfig.save();
-      console.log(`BusinessConfig por defecto creado para ${business.idNegocio} al iniciar sesión.`);
     }
     // --- FIN NUEVA LÓGICA ---
 

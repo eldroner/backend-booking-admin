@@ -23,6 +23,7 @@ router.post('/business/initialize', auth_middleware_1.authenticateAdmin, busines
 router.get('/config', config_controller_1.getConfig);
 router.put('/config', auth_middleware_1.authenticateAdmin, config_controller_1.updateConfig);
 router.get('/config/maps-api-key', config_controller_1.getGoogleMapsApiKey);
+router.get('/config/maps-map-id', config_controller_1.getGoogleMapsMapId);
 // Rutas de subida de imágenes
 router.post('/upload/image', auth_middleware_1.authenticateAdmin, upload.single('image'), upload_controller_1.uploadImage);
 router.post('/upload/images', auth_middleware_1.authenticateAdmin, upload.array('images', 10), upload_controller_1.uploadImages);

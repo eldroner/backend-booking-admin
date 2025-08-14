@@ -22,12 +22,10 @@ export const initializeBusiness = async (req: Request, res: Response) => {
     if (!allowedBusiness) {
       allowedBusiness = new AllowedBusinessModel({ idNegocio, emailContacto, estado: 'activo' });
       await allowedBusiness.save();
-      console.log(`AllowedBusiness creado para ${idNegocio}`);
     } else if (allowedBusiness.emailContacto !== emailContacto) {
       // Opcional: Actualizar emailContacto si ha cambiado
       allowedBusiness.emailContacto = emailContacto;
       await allowedBusiness.save();
-      console.log(`AllowedBusiness actualizado para ${idNegocio}`);
     }
 
     // 2. Crear BusinessConfig por defecto si no existe
@@ -45,7 +43,6 @@ export const initializeBusiness = async (req: Request, res: Response) => {
       };
       businessConfig = new BusinessConfigModel(defaultConfig);
       await businessConfig.save();
-      console.log(`BusinessConfig por defecto creado para ${idNegocio}`);
     }
 
     res.status(200).json({ message: 'Negocio inicializado correctamente', idNegocio });

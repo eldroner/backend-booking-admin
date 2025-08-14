@@ -10,7 +10,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-console.log('CLOUDINARY_API_KEY en app.ts:', process.env.CLOUDINARY_API_KEY);
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -31,9 +30,10 @@ const mongooseOptions = {
 
 
 
+
+
 mongoose.connect(MONGODB_URI, mongooseOptions)
   .then(() => {
-    console.log('✅ Conectado a MongoDB');
     startReservationCleanupJob(); // Start the cron job
   })
   .catch(err => {
@@ -120,24 +120,19 @@ app.use('*', (req: Request, res: Response) => {
 // 8. Configuración del servidor
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
-  console.log(`✅ Servidor backend en puerto ${PORT}`);
 });
 
 // 9. Manejo de cierre adecuado
 process.on('SIGTERM', () => {
-  console.log('🛑 Recibido SIGTERM. Cerrando servidor...');
   server.close(() => {
     mongoose.disconnect();
-    console.log('Servidor cerrado correctamente');
     process.exit(0);
   });
 });
 
 process.on('SIGINT', () => {
-  console.log('🛑 Recibido SIGINT. Cerrando servidor...');
   server.close(() => {
     mongoose.disconnect();
-    console.log('Servidor cerrado correctamente');
     process.exit(0);
   });
 });

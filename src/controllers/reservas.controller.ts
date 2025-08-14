@@ -299,7 +299,6 @@ export const getReservas = async (
 export const confirmarReserva = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
-    console.log('Token recibido:', token); // Para debug
 
     if (!process.env.JWT_SECRET) {
       throw new Error("JWT_SECRET no configurado");
@@ -311,8 +310,6 @@ export const confirmarReserva = async (req: Request, res: Response) => {
       fecha: string;
       servicio: string;
     };
-
-    console.log('Datos decodificados:', decoded); // Para debug
 
     // Buscar y actualizar reserva
     const reserva = await ReservaModel.findOneAndUpdate(

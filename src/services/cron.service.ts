@@ -5,7 +5,6 @@ import { sendCancellationEmail } from './email.service';
 
 export const startReservationCleanupJob = () => {
   cron.schedule('* * * * *', async () => { // Runs every minute
-    console.log('Running reservation cleanup job...');
     const now = new Date();
 
     try {
@@ -15,8 +14,6 @@ export const startReservationCleanupJob = () => {
       });
 
       for (const reserva of expiredReservations) {
-        console.log(`Cancelling expired reservation: ${reserva._id}`);
-
         // Update reservation status to cancelled
         reserva.estado = 'cancelada';
         await reserva.save();
@@ -52,7 +49,6 @@ export const startReservationCleanupJob = () => {
           console.error(`Failed to send cancellation email for reservation ${reserva._id}:`, emailError);
         }
       }
-      console.log('Reservation cleanup job finished.');
     } catch (error) {
       console.error('Error in reservation cleanup job:', error);
     }

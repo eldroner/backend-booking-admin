@@ -228,13 +228,11 @@ exports.getReservas = getReservas;
 const confirmarReserva = async (req, res) => {
     try {
         const { token } = req.params;
-        console.log('Token recibido:', token); // Para debug
         if (!process.env.JWT_SECRET) {
             throw new Error("JWT_SECRET no configurado");
         }
         // Verificar token
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
-        console.log('Datos decodificados:', decoded); // Para debug
         // Buscar y actualizar reserva
         const reserva = await reserva_model_1.ReservaModel.findOneAndUpdate({
             'usuario.email': decoded.email,

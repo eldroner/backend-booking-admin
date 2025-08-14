@@ -140,4 +140,17 @@ export const getGoogleMapsApiKey = (req: Request, res: Response) => {
   }
 };
 
+export const getGoogleMapsMapId = (req: Request, res: Response) => {
+  try {
+    const mapId = process.env.GOOGLE_MAPS_MAP_ID;
+    if (!mapId) {
+      throw new Error('Google Maps Map ID no encontrado en el servidor');
+    }
+    res.json({ mapId });
+  } catch (error) {
+     console.error('Error fetching Google Maps Map ID:', error);
+     res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
 // Eliminar saveConfig ya que updateConfig hace lo mismo con PUT
