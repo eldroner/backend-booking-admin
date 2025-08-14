@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const cron_service_1 = require("./services/cron.service");
 const mongoose_1 = __importDefault(require("mongoose"));
 require("dotenv/config");
 const cloudinary_1 = __importDefault(require("./config/cloudinary")); // Importar el objeto cloudinary
@@ -28,7 +29,10 @@ const mongooseOptions = {
     retryReads: true
 };
 mongoose_1.default.connect(MONGODB_URI, mongooseOptions)
-    .then(() => console.log('✅ Conectado a MongoDB'))
+    .then(() => {
+    console.log('✅ Conectado a MongoDB');
+    (0, cron_service_1.startReservationCleanupJob)(); // Start the cron job
+})
     .catch(err => {
     console.error('❌ Error de conexión a MongoDB:', err.message);
     process.exit(1); // Salir si no hay conexión a DB

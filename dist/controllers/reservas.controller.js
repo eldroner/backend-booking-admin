@@ -206,6 +206,7 @@ const getReservas = async (req, res) => {
             },
             fechaInicio: reserva.fechaInicio.toISOString(),
             ...(reserva.fechaFin && { fechaFin: reserva.fechaFin.toISOString() }),
+            ...(reserva.expiresAt && { expiresAt: reserva.expiresAt.toISOString() }), // Add this line
             servicio: reserva.servicio,
             estado: reserva.estado,
             confirmacionToken: reserva.confirmacionToken || '',
