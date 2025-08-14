@@ -68,7 +68,7 @@ const createReserva = async (req, res) => {
             confirmacionToken,
             cancellation_token: cancellationToken,
             duracion: reservaBody.duracion || 30,
-            expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000)
+            expiresAt: new Date(Date.now() + 30 * 60 * 1000) // 30 minutos
         };
         // Añadir fechaFin si existe
         if (reservaBody.fechaFin) {
