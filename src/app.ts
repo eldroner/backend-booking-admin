@@ -1,3 +1,4 @@
+import { startReservationCleanupJob } from './services/cron.service';
 import mongoose from 'mongoose';
 import 'dotenv/config';
 import cloudinary from './config/cloudinary'; // Importar el objeto cloudinary
@@ -28,8 +29,13 @@ const mongooseOptions = {
   retryReads: true
 };
 
+
+
 mongoose.connect(MONGODB_URI, mongooseOptions)
-  .then(() => console.log('✅ Conectado a MongoDB'))
+  .then(() => {
+    console.log('✅ Conectado a MongoDB');
+    startReservationCleanupJob(); // Start the cron job
+  })
   .catch(err => {
     console.error('❌ Error de conexión a MongoDB:', err.message);
     process.exit(1); // Salir si no hay conexión a DB
