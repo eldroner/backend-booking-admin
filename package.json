@@ -24,16 +24,10 @@
     "@types/node": "^20.17.43",
     "@types/uuid": "^10.0.0",
     "@types/node-cron": "^3.0.0",
-    "@types/nodemailer": "^6.0.0",,
+    "@types/nodemailer": "^6.0.0",
     "zod": "^3.24.4"
   },
-  "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^4.17.23",
-    "@types/morgan": "^1.9.10",
-    "@types/multer": "^2.0.0",
-    "@types/node": "^20.17.43",
-    "@types/uuid": "^10.0.0",
+  "scripts": {
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },
