@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { BusinessConfigModel } from '../models/config.model';
 import { AllowedBusinessModel } from '../models/allowed-business.model';
 import { z } from 'zod';
+import mongoose from 'mongoose';
 
 const ConfigSchema = z.object({
   nombre: z.string().min(1),
@@ -9,7 +10,7 @@ const ConfigSchema = z.object({
   duracionBase: z.number().min(5),
   maxReservasPorSlot: z.number().min(1),
   servicios: z.array(z.object({
-    id: z.string().min(1),
+    id: z.string().optional(),
     nombre: z.string().min(1),
     duracion: z.number().min(5)
   })),
@@ -94,8 +95,17 @@ export const updateConfig = async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'No tiene permisos para configurar este negocio' });
     }
 
+    const data = req.body;
+    if (data.servicios && Array.isArray(data.servicios)) {
+      data.servicios.forEach((servicio: any) => {
+        if (!servicio.id) {
+          servicio.id = new mongoose.Types.ObjectId().toHexString();
+        }
+      });
+    }
+
     // 2. Validar los datos de entrada
-    const validatedData = ConfigSchema.parse(req.body);
+    const validatedData = ConfigSchema.parse(data);
     
     // 3. Actualizar o crear la configuración (upsert)
     const updatedConfig = await BusinessConfigModel.findOneAndUpdate(

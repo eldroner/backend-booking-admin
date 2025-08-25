@@ -1,16 +1,20 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getGoogleMapsMapId = exports.getGoogleMapsApiKey = exports.updateConfig = exports.getConfig = void 0;
 const config_model_1 = require("../models/config.model");
 const allowed_business_model_1 = require("../models/allowed-business.model");
 const zod_1 = require("zod");
+const mongoose_1 = __importDefault(require("mongoose"));
 const ConfigSchema = zod_1.z.object({
     nombre: zod_1.z.string().min(1),
     slogan: zod_1.z.string().max(150).optional(),
     duracionBase: zod_1.z.number().min(5),
     maxReservasPorSlot: zod_1.z.number().min(1),
     servicios: zod_1.z.array(zod_1.z.object({
-        id: zod_1.z.string().min(1),
+        id: zod_1.z.string().optional(),
         nombre: zod_1.z.string().min(1),
         duracion: zod_1.z.number().min(5)
     })),
@@ -86,8 +90,16 @@ const updateConfig = async (req, res) => {
         if (!negocioPermitido) {
             return res.status(403).json({ error: 'No tiene permisos para configurar este negocio' });
         }
+        const data = req.body;
+        if (data.servicios && Array.isArray(data.servicios)) {
+            data.servicios.forEach((servicio) => {
+                if (!servicio.id) {
+                    servicio.id = new mongoose_1.default.Types.ObjectId().toHexString();
+                }
+            });
+        }
         // 2. Validar los datos de entrada
-        const validatedData = ConfigSchema.parse(req.body);
+        const validatedData = ConfigSchema.parse(data);
         // 3. Actualizar o crear la configuración (upsert)
         const updatedConfig = await config_model_1.BusinessConfigModel.findOneAndUpdate({ idNegocio: idNegocio }, { ...validatedData, idNegocio: idNegocio }, { new: true, upsert: true, setDefaultsOnInsert: true });
         // 4. (Opcional) Marcar el negocio como 'activo' si estaba 'pendiente'
