@@ -3,6 +3,7 @@ import { getConfig, updateConfig, getGoogleMapsApiKey, getGoogleMapsMapId } from
 import { getReservas, createReserva, deleteReserva, confirmarReserva, confirmarReservaDefinitiva, addReservaAdmin, confirmarReservaAdmin, cancelarReserva, cancelarReservaPorToken } from '../controllers/reservas.controller';
 import { deleteFechaBloqueada, getFechasBloqueadas, addFechaBloqueada } from '../controllers/bloqueo.controller';
 import { getServicios } from '../controllers/servicios.controller';
+import { createCheckoutSession } from '../controllers/payment.controller';
 import { loginByEmail } from '../controllers/auth.controller'; // Importar el nuevo controlador
 import { initializeBusiness } from '../controllers/business.controller'; // Importar el nuevo controlador de negocio
 import { authenticateAdmin } from '../middleware/auth.middleware'; // Importar el middleware de autenticación
@@ -25,6 +26,9 @@ router.get('/config', getConfig);
 router.put('/config', authenticateAdmin, updateConfig);
 router.get('/config/maps-api-key', getGoogleMapsApiKey);
 router.get('/config/maps-map-id', getGoogleMapsMapId);
+
+// --- Payment Routes ---
+router.post('/payments/create-checkout-session', createCheckoutSession);
 
 // Rutas de subida de imágenes
 router.post('/upload/image', authenticateAdmin, upload.single('image'), uploadImage);

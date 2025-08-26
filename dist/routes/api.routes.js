@@ -41,6 +41,7 @@ const config_controller_1 = require("../controllers/config.controller");
 const reservas_controller_1 = require("../controllers/reservas.controller");
 const bloqueo_controller_1 = require("../controllers/bloqueo.controller");
 const servicios_controller_1 = require("../controllers/servicios.controller");
+const payment_controller_1 = require("../controllers/payment.controller");
 const auth_controller_1 = require("../controllers/auth.controller"); // Importar el nuevo controlador
 const business_controller_1 = require("../controllers/business.controller"); // Importar el nuevo controlador de negocio
 const auth_middleware_1 = require("../middleware/auth.middleware"); // Importar el middleware de autenticación
@@ -59,6 +60,8 @@ router.get('/config', config_controller_1.getConfig);
 router.put('/config', auth_middleware_1.authenticateAdmin, config_controller_1.updateConfig);
 router.get('/config/maps-api-key', config_controller_1.getGoogleMapsApiKey);
 router.get('/config/maps-map-id', config_controller_1.getGoogleMapsMapId);
+// --- Payment Routes ---
+router.post('/payments/create-checkout-session', payment_controller_1.createCheckoutSession);
 // Rutas de subida de imágenes
 router.post('/upload/image', auth_middleware_1.authenticateAdmin, upload.single('image'), upload_controller_1.uploadImage);
 router.post('/upload/images', auth_middleware_1.authenticateAdmin, upload.array('images', 10), upload_controller_1.uploadImages);

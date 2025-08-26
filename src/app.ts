@@ -16,6 +16,8 @@ import morgan from 'morgan';
 import configRoutes from './routes/api.routes';
 import { Request, Response, NextFunction } from 'express';
 
+import { handleStripeWebhook } from './controllers/payment.controller';
+
 const app = express();
 
 // 1. Configuración mejorada de MongoDB
@@ -63,6 +65,9 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Stripe webhook endpoint needs the raw body
+app.post('/api/payments/webhook', express.raw({type: 'application/json'}), handleStripeWebhook);
 
 app.use(express.json({ limit: '10kb' })); // Limitar tamaño de payload
 

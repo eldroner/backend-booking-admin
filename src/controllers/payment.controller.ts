@@ -1,0 +1,138 @@
+import { Request, Response } from 'express';
+import Stripe from 'stripe';
+
+import { AllowedBusinessModel } from '../models/allowed-business.model';
+import { customAlphabet } from 'nanoid';
+
+// It's a good practice to initialize Stripe with the API key from environment variables.
+// The check for process.env.STRIPE_API_KEY ensures we don't crash if it's missing.
+const stripe = new Stripe(process.env.STRIPE_API_KEY || '', {
+  apiVersion: '2024-04-10', // Use a fixed API version
+});
+
+// Helper to generate a unique business ID from a name
+const generateBusinessId = async (name: string): Promise<string> => {
+  const slug = name
+    .toLowerCase()
+    .replace(/\s+/g, '-') // Replace spaces with -
+    .replace(/[^\w\-]+/g, '') // Remove all non-word chars
+    .replace(/\-\-+/g, '-') // Replace multiple - with single -
+    .replace(/^-+/, '') // Trim - from start of text
+    .replace(/-+$/, ''); // Trim - from end of text
+
+  const existing = await AllowedBusinessModel.findOne({ idNegocio: slug });
+  if (!existing) {
+    return slug;
+  }
+
+  // If slug exists, add a short random suffix
+  const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 4);
+  return `${slug}-${nanoid()}`;
+};
+
+export const createCheckoutSession = async (req: Request, res: Response) => {
+  const { businessName, userEmail } = req.body;
+
+  // The user only needs to create one Product and Price in the Stripe Dashboard.
+  const plan = {
+    priceId: 'price_1S0SDxDz9N5vmn9tXiypiQNh' // Replace with your actual Price ID from Stripe
+  };
+
+  if (!businessName || !userEmail) {
+    return res.status(400).json({ error: 'Invalid input: businessName and userEmail are required.' });
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: plan.priceId,
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription',
+      success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL}/payment-cancelled`,
+      // Store data to be used by the webhook upon successful payment
+      metadata: {
+        businessName,
+        userEmail,
+        planName: 'default' // You can change this to the chosen plan name
+      }
+    });
+
+    res.status(200).json({ url: session.url });
+  } catch (error) {
+    if (error instanceof Error) {
+        res.status(500).json({ error: `Stripe Error: ${error.message}` });
+    } else {
+        res.status(500).json({ error: 'An unknown error occurred while creating checkout session' });
+    }
+  }
+};
+
+export const handleStripeWebhook = async (req: Request, res: Response) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!sig || !webhookSecret) {
+    console.error('Stripe signature or webhook secret is missing.');
+    return res.status(400).send('Webhook Error: Configuration missing');
+  }
+
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error(`Webhook signature verification failed: ${errorMessage}`);
+    return res.status(400).send(`Webhook Error: ${errorMessage}`);
+  }
+
+  // Handle the event
+  switch (event.type) {
+    case 'checkout.session.completed':
+      const session = event.data.object as Stripe.Checkout.Session;
+      const { businessName, userEmail } = session.metadata || {};
+
+      if (!businessName || !userEmail) {
+        console.error('Webhook received without required metadata (businessName, userEmail).');
+        // Still return 200 to Stripe to prevent retries for this malformed event.
+        return res.status(200).json({ received: true, error: "Missing metadata" });
+      }
+
+      try {
+        // Check if a business with this email already exists to prevent duplicates
+        const existingBusiness = await AllowedBusinessModel.findOne({ emailContacto: userEmail });
+        if (existingBusiness) {
+          console.log(`Webhook received for an existing email: ${userEmail}. Ignoring.`);
+          break; // Exit the switch, but send 200 OK
+        }
+
+        const newBusinessId = await generateBusinessId(businessName);
+
+        const newBusiness = new AllowedBusinessModel({
+          idNegocio: newBusinessId,
+          emailContacto: userEmail,
+          estado: 'activo'
+        });
+
+        await newBusiness.save();
+        console.log(`✅ Payment successful! New business created: ${newBusinessId}`);
+
+      } catch (dbError) {
+        console.error('Error creating business after webhook received:', dbError);
+        // We don't send a 500 to Stripe, as it would cause retries.
+        // This is an internal error that should be monitored.
+      }
+
+      break;
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+
+  // Return a 200 response to acknowledge receipt of the event
+  res.status(200).json({ received: true });
+};

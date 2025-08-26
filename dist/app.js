@@ -17,6 +17,7 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const morgan_1 = __importDefault(require("morgan"));
 const api_routes_1 = __importDefault(require("./routes/api.routes"));
+const payment_controller_1 = require("./controllers/payment.controller");
 const app = (0, express_1.default)();
 // 1. Configuración mejorada de MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/booking-manager';
@@ -56,6 +57,8 @@ app.use((0, cors_1.default)({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+// Stripe webhook endpoint needs the raw body
+app.post('/api/payments/webhook', express_1.default.raw({ type: 'application/json' }), payment_controller_1.handleStripeWebhook);
 app.use(express_1.default.json({ limit: '10kb' })); // Limitar tamaño de payload
 // Logger de solicitudes HTTP
 app.use((0, morgan_1.default)('dev'));
