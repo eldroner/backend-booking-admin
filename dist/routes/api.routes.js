@@ -62,6 +62,7 @@ router.get('/config/maps-api-key', config_controller_1.getGoogleMapsApiKey);
 router.get('/config/maps-map-id', config_controller_1.getGoogleMapsMapId);
 // --- Payment Routes ---
 router.post('/payments/create-checkout-session', payment_controller_1.createCheckoutSession);
+router.get('/payments/session-status', payment_controller_1.getCheckoutSessionStatus);
 // Rutas de subida de imágenes
 router.post('/upload/image', auth_middleware_1.authenticateAdmin, upload.single('image'), upload_controller_1.uploadImage);
 router.post('/upload/images', auth_middleware_1.authenticateAdmin, upload.array('images', 10), upload_controller_1.uploadImages);

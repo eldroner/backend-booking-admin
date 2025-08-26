@@ -136,3 +136,38 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
   // Return a 200 response to acknowledge receipt of the event
   res.status(200).json({ received: true });
 };
+
+export const getCheckoutSessionStatus = async (req: Request, res: Response) => {
+  const { session_id } = req.query;
+
+  if (!session_id || typeof session_id !== 'string') {
+    return res.status(400).json({ error: 'Session ID is required.' });
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+    const userEmail = session.metadata?.userEmail;
+
+    if (session.payment_status === 'paid' && userEmail) {
+      // Payment was successful, find the business that was created.
+      const business = await AllowedBusinessModel.findOne({ emailContacto: userEmail });
+      if (business) {
+        return res.json({
+          status: session.status,
+          payment_status: session.payment_status,
+          customer_email: session.customer_details?.email,
+          idNegocio: business.idNegocio
+        });
+      } else {
+        // This can happen due to a small delay between webhook processing and this call.
+        // Or if the webhook failed.
+        return res.status(404).json({ error: 'Business not found, but payment was successful. Please try again shortly.' });
+      }
+    } else {
+      return res.status(400).json({ error: 'Payment not successful or session invalid.' });
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: `Stripe Error: ${errorMessage}` });
+  }
+};
