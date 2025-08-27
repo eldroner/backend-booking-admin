@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import Stripe from 'stripe';
 
 import { AllowedBusinessModel } from '../models/allowed-business.model';
-import { customAlphabet } from 'nanoid';
+import { BusinessConfigModel } from '../models/config.model';
+import ServicioModel from '../models/servicios.model';
 
 // It's a good practice to initialize Stripe with the API key from environment variables.
 // The check for process.env.STRIPE_API_KEY ensures we don't crash if it's missing.
@@ -10,36 +11,18 @@ const stripe = new Stripe(process.env.STRIPE_API_KEY || '', {
   apiVersion: '2024-04-10', // Use a fixed API version
 });
 
-// Helper to generate a unique business ID from a name
-const generateBusinessId = async (name: string): Promise<string> => {
-  const slug = name
-    .toLowerCase()
-    .replace(/\s+/g, '-') // Replace spaces with -
-    .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-    .replace(/\-\-+/g, '-') // Replace multiple - with single -
-    .replace(/^-+/, '') // Trim - from start of text
-    .replace(/-+$/, ''); // Trim - from end of text
 
-  const existing = await AllowedBusinessModel.findOne({ idNegocio: slug });
-  if (!existing) {
-    return slug;
-  }
-
-  // If slug exists, add a short random suffix
-  const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 4);
-  return `${slug}-${nanoid()}`;
-};
 
 export const createCheckoutSession = async (req: Request, res: Response) => {
-  const { businessName, userEmail } = req.body;
+  const { businessId, userEmail } = req.body;
 
   // The user only needs to create one Product and Price in the Stripe Dashboard.
   const plan = {
     priceId: 'price_1S0SDxDz9N5vmn9tXiypiQNh' // Replace with your actual Price ID from Stripe
   };
 
-  if (!businessName || !userEmail) {
-    return res.status(400).json({ error: 'Invalid input: businessName and userEmail are required.' });
+  if (!businessId || !userEmail) {
+    return res.status(400).json({ error: 'Invalid input: businessId and userEmail are required.' });
   }
 
   try {
@@ -56,7 +39,7 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
       cancel_url: `${process.env.FRONTEND_URL}/payment-cancelled`,
       // Store data to be used by the webhook upon successful payment
       metadata: {
-        businessName,
+        businessId,
         userEmail,
         planName: 'default' // You can change this to the chosen plan name
       }
@@ -95,15 +78,23 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
   switch (event.type) {
     case 'checkout.session.completed':
       const session = event.data.object as Stripe.Checkout.Session;
-      const { businessName, userEmail } = session.metadata || {};
+      const { businessId, userEmail } = session.metadata || {};
+      console.log(`Webhook received for businessId: ${businessId}, userEmail: ${userEmail}`);
 
-      if (!businessName || !userEmail) {
-        console.error('Webhook received without required metadata (businessName, userEmail).');
+      if (!businessId || !userEmail) {
+        console.error('Webhook received without required metadata (businessId, userEmail).');
         // Still return 200 to Stripe to prevent retries for this malformed event.
         return res.status(200).json({ received: true, error: "Missing metadata" });
       }
 
       try {
+        // FOR DEVELOPMENT ONLY: Delete existing business and config to allow re-testing
+        console.log(`Attempting to delete existing AllowedBusiness for email: ${userEmail}`);
+        await AllowedBusinessModel.deleteOne({ emailContacto: userEmail });
+        console.log(`Attempting to delete existing BusinessConfig for idNegocio: ${businessId}`);
+        await BusinessConfigModel.deleteOne({ idNegocio: businessId });
+        console.log('Existing documents deleted (if any).');
+
         // Check if a business with this email already exists to prevent duplicates
         const existingBusiness = await AllowedBusinessModel.findOne({ emailContacto: userEmail });
         if (existingBusiness) {
@@ -111,16 +102,38 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
           break; // Exit the switch, but send 200 OK
         }
 
-        const newBusinessId = await generateBusinessId(businessName);
-
         const newBusiness = new AllowedBusinessModel({
-          idNegocio: newBusinessId,
+          idNegocio: businessId,
           emailContacto: userEmail,
           estado: 'activo'
         });
 
+        console.log('Saving new business...');
         await newBusiness.save();
-        console.log(`✅ Payment successful! New business created: ${newBusinessId}`);
+        console.log('New business saved.');
+
+        // Create default config with default services
+        const defaultConfig = new BusinessConfigModel({
+          idNegocio: businessId,
+          nombre: businessId,
+          duracionBase: 30,
+          maxReservasPorSlot: 1,
+          servicios: [
+            { id: 'servicio-1', nombre: 'Servicio 1', duracion: 30 },
+            { id: 'servicio-2', nombre: 'Servicio 2', duracion: 60 },
+          ],
+          horariosNormales: [
+            { dia: 1, tramos: [{ horaInicio: '09:00', horaFin: '13:00' }] }, // Lunes
+            { dia: 2, tramos: [{ horaInicio: '09:00', horaFin: '13:00' }] }, // Martes
+            { dia: 3, tramos: [{ horaInicio: '09:00', horaFin: '13:00' }] }, // Miércoles
+            { dia: 4, tramos: [{ horaInicio: '09:00', horaFin: '13:00' }] }, // Jueves
+            { dia: 5, tramos: [{ horaInicio: '09:00', horaFin: '13:00' }] }, // Viernes
+          ],
+        });
+
+        await defaultConfig.save();
+
+        console.log(`✅ Payment successful! New business created: ${businessId} with default data.`);
 
       } catch (dbError) {
         console.error('Error creating business after webhook received:', dbError);
