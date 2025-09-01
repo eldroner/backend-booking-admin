@@ -9,10 +9,24 @@ export const uploadImage = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'No se ha subido ningún archivo' });
     }
 
-    // Subir la imagen a Cloudinary
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: 'booking-manager', // Carpeta en Cloudinary para organizar las imágenes
+    // Subir la imagen a Cloudinary desde el buffer
+    const uploadPromise = new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { folder: 'booking-manager' },
+        (error, result) => {
+          if (error) {
+            return reject(error);
+          }
+          resolve(result);
+        }
+      );
+      const readableStream = new Readable();
+      readableStream.push(req.file!.buffer);
+      readableStream.push(null);
+      readableStream.pipe(uploadStream);
     });
+
+    const result = await uploadPromise as any;
 
     // Devolver la URL segura de la imagen
     res.json({ imageUrl: result.secure_url });
