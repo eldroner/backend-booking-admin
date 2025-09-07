@@ -3,15 +3,13 @@ import Stripe from 'stripe';
 
 import { AllowedBusinessModel } from '../models/allowed-business.model';
 import { BusinessConfigModel } from '../models/config.model';
-import ServicioModel from '../models/servicios.model';
+import { sendWelcomeEmail } from '../services/email.service';
 
 // It's a good practice to initialize Stripe with the API key from environment variables.
 // The check for process.env.STRIPE_API_KEY ensures we don't crash if it's missing.
 const stripe = new Stripe(process.env.STRIPE_API_KEY || '', {
   apiVersion: '2024-04-10', // Use a fixed API version
 });
-
-
 
 export const createCheckoutSession = async (req: Request, res: Response) => {
   const { businessId, userEmail } = req.body;
@@ -35,6 +33,9 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
         },
       ],
       mode: 'subscription',
+      subscription_data: {
+        trial_period_days: 30,
+      },
       success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/payment-cancelled`,
       // Store data to be used by the webhook upon successful payment
@@ -83,7 +84,6 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
 
       if (!businessId || !userEmail) {
         console.error('Webhook received without required metadata (businessId, userEmail).');
-        // Still return 200 to Stripe to prevent retries for this malformed event.
         return res.status(200).json({ received: true, error: "Missing metadata" });
       }
 
@@ -132,6 +132,8 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
         });
 
         await defaultConfig.save();
+
+        await sendWelcomeEmail({ to_email: userEmail, business_id: businessId });
 
         console.log(`✅ Payment successful! New business created: ${businessId} with default data.`);
 
