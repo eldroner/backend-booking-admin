@@ -1,4 +1,3 @@
-
 import { Schema, model, Document } from 'mongoose';
 
 export interface IAllowedBusiness extends Document {
@@ -7,6 +6,10 @@ export interface IAllowedBusiness extends Document {
   password?: string; // Campo de contraseña opcional
   estado: 'pendiente' | 'activo';
   fechaCreacion: Date;
+  stripeSubscriptionId?: string;
+  subscriptionStatus?: 'trialing' | 'active' | 'canceled' | 'paused' | 'unpaid';
+  periodEndDate?: Date;
+  cancelAtPeriodEnd?: boolean;
 }
 
 const AllowedBusinessSchema = new Schema<IAllowedBusiness>({
@@ -35,7 +38,24 @@ const AllowedBusinessSchema = new Schema<IAllowedBusiness>({
   fechaCreacion: { 
     type: Date, 
     default: Date.now 
-  }
+  },
+  stripeSubscriptionId: {
+    type: String,
+    required: false,
+  },
+  subscriptionStatus: {
+    type: String,
+    enum: ['trialing', 'active', 'canceled', 'paused', 'unpaid'],
+    required: false,
+  },
+  periodEndDate: {
+    type: Date,
+    required: false,
+  },
+  cancelAtPeriodEnd: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 export const AllowedBusinessModel = model<IAllowedBusiness>('AllowedBusiness', AllowedBusinessSchema);
