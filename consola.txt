@@ -1,199 +1,58 @@
-chunk-6SKP3EEB.js:3 BookingPageComponent loaded.
-chunk-D5UOCUIB.js:7 ERROR ot {headers: t, status: 200, statusText: 'OK', url: 'https://reservas.pixelnova.es/api/subscription/details', ok: false, …}
-handleError @ chunk-D5UOCUIB.js:7
-next @ chunk-D5UOCUIB.js:7
-next @ chunk-D5UOCUIB.js:3
-_next @ chunk-D5UOCUIB.js:3
-next @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-wt @ chunk-D5UOCUIB.js:3
-next @ chunk-D5UOCUIB.js:3
-emit @ chunk-D5UOCUIB.js:7
-(anonymous) @ chunk-D5UOCUIB.js:7
-invoke @ polyfills-B6TNHZQ6.js:1
-run @ polyfills-B6TNHZQ6.js:1
-runOutsideAngular @ chunk-D5UOCUIB.js:7
-onHandleError @ chunk-D5UOCUIB.js:7
-handleError @ polyfills-B6TNHZQ6.js:1
-runTask @ polyfills-B6TNHZQ6.js:1
-invokeTask @ polyfills-B6TNHZQ6.js:1
-E.useG.invoke @ polyfills-B6TNHZQ6.js:1
-T._.args.<computed> @ polyfills-B6TNHZQ6.js:1
-setTimeout
-T @ polyfills-B6TNHZQ6.js:1
-scheduleTask @ polyfills-B6TNHZQ6.js:1
-onScheduleTask @ polyfills-B6TNHZQ6.js:1
-scheduleTask @ polyfills-B6TNHZQ6.js:1
-scheduleTask @ polyfills-B6TNHZQ6.js:1
-scheduleMacroTask @ polyfills-B6TNHZQ6.js:1
-xe @ polyfills-B6TNHZQ6.js:1
-(anonymous) @ polyfills-B6TNHZQ6.js:1
-e.<computed> @ polyfills-B6TNHZQ6.js:1
-setTimeout @ chunk-D5UOCUIB.js:3
-qn @ chunk-D5UOCUIB.js:3
-Zn @ chunk-D5UOCUIB.js:3
-error @ chunk-D5UOCUIB.js:3
-_error @ chunk-D5UOCUIB.js:3
-error @ chunk-D5UOCUIB.js:3
-_error @ chunk-D5UOCUIB.js:3
-error @ chunk-D5UOCUIB.js:3
-_error @ chunk-D5UOCUIB.js:3
-error @ chunk-D5UOCUIB.js:3
-_error @ chunk-D5UOCUIB.js:3
-error @ chunk-D5UOCUIB.js:3
-r @ chunk-D5UOCUIB.js:3
-_trySubscribe @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-wt @ chunk-D5UOCUIB.js:3
-subscribe @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-_error @ chunk-D5UOCUIB.js:3
-error @ chunk-D5UOCUIB.js:3
-_error @ chunk-D5UOCUIB.js:3
-error @ chunk-D5UOCUIB.js:3
-l @ chunk-2BJHSAJ2.js:2
-invokeTask @ polyfills-B6TNHZQ6.js:1
-onInvokeTask @ chunk-D5UOCUIB.js:7
-invokeTask @ polyfills-B6TNHZQ6.js:1
-runTask @ polyfills-B6TNHZQ6.js:1
-invokeTask @ polyfills-B6TNHZQ6.js:1
-L @ polyfills-B6TNHZQ6.js:1
-H @ polyfills-B6TNHZQ6.js:1
-z @ polyfills-B6TNHZQ6.js:1
-XMLHttpRequest.send
-p @ polyfills-B6TNHZQ6.js:1
-scheduleTask @ polyfills-B6TNHZQ6.js:1
-onScheduleTask @ polyfills-B6TNHZQ6.js:1
-scheduleTask @ polyfills-B6TNHZQ6.js:1
-scheduleTask @ polyfills-B6TNHZQ6.js:1
-scheduleMacroTask @ polyfills-B6TNHZQ6.js:1
-xe @ polyfills-B6TNHZQ6.js:1
-(anonymous) @ polyfills-B6TNHZQ6.js:1
-e.<computed> @ polyfills-B6TNHZQ6.js:1
-(anonymous) @ chunk-2BJHSAJ2.js:2
-_trySubscribe @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-wt @ chunk-D5UOCUIB.js:3
-subscribe @ chunk-D5UOCUIB.js:3
-n.subscribe.s @ chunk-D5UOCUIB.js:3
-_next @ chunk-D5UOCUIB.js:3
-next @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-_trySubscribe @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-wt @ chunk-D5UOCUIB.js:3
-subscribe @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-wt @ chunk-D5UOCUIB.js:3
-subscribe @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-wt @ chunk-D5UOCUIB.js:3
-subscribe @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-wt @ chunk-D5UOCUIB.js:3
-subscribe @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-wt @ chunk-D5UOCUIB.js:3
-subscribe @ chunk-D5UOCUIB.js:3
-h @ chunk-D5UOCUIB.js:3
-d @ chunk-D5UOCUIB.js:3
-_next @ chunk-D5UOCUIB.js:3
-next @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-_trySubscribe @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-wt @ chunk-D5UOCUIB.js:3
-subscribe @ chunk-D5UOCUIB.js:3
-xc @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-wt @ chunk-D5UOCUIB.js:3
-subscribe @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-wt @ chunk-D5UOCUIB.js:3
-subscribe @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-wt @ chunk-D5UOCUIB.js:3
-subscribe @ chunk-D5UOCUIB.js:3
-ngOnInit @ chunk-6SKP3EEB.js:2
-Gc @ chunk-D5UOCUIB.js:7
-rg @ chunk-D5UOCUIB.js:7
-Cl @ chunk-D5UOCUIB.js:7
-_r @ chunk-D5UOCUIB.js:7
-Ty @ chunk-D5UOCUIB.js:7
-ps @ chunk-D5UOCUIB.js:7
-Sd @ chunk-D5UOCUIB.js:7
-Td @ chunk-D5UOCUIB.js:7
-Ty @ chunk-D5UOCUIB.js:7
-ps @ chunk-D5UOCUIB.js:7
-Sd @ chunk-D5UOCUIB.js:7
-Ny @ chunk-D5UOCUIB.js:7
-Nd @ chunk-D5UOCUIB.js:7
-Ty @ chunk-D5UOCUIB.js:7
-ps @ chunk-D5UOCUIB.js:7
-Sd @ chunk-D5UOCUIB.js:7
-Td @ chunk-D5UOCUIB.js:7
-Ty @ chunk-D5UOCUIB.js:7
-ps @ chunk-D5UOCUIB.js:7
-Sd @ chunk-D5UOCUIB.js:7
-Td @ chunk-D5UOCUIB.js:7
-Ty @ chunk-D5UOCUIB.js:7
-ps @ chunk-D5UOCUIB.js:7
-Sd @ chunk-D5UOCUIB.js:7
-Ny @ chunk-D5UOCUIB.js:7
-Nd @ chunk-D5UOCUIB.js:7
-Ty @ chunk-D5UOCUIB.js:7
-ps @ chunk-D5UOCUIB.js:7
-Sd @ chunk-D5UOCUIB.js:7
-Td @ chunk-D5UOCUIB.js:7
-Ty @ chunk-D5UOCUIB.js:7
-ps @ chunk-D5UOCUIB.js:7
-Sd @ chunk-D5UOCUIB.js:7
-Ny @ chunk-D5UOCUIB.js:7
-Nd @ chunk-D5UOCUIB.js:7
-Ty @ chunk-D5UOCUIB.js:7
-ps @ chunk-D5UOCUIB.js:7
-My @ chunk-D5UOCUIB.js:7
-Md @ chunk-D5UOCUIB.js:7
-tD @ chunk-D5UOCUIB.js:7
-synchronizeOnce @ chunk-D5UOCUIB.js:7
-synchronize @ chunk-D5UOCUIB.js:7
-tickImpl @ chunk-D5UOCUIB.js:7
-_tick @ chunk-D5UOCUIB.js:7
-tick @ chunk-D5UOCUIB.js:7
-(anonymous) @ chunk-D5UOCUIB.js:7
-invoke @ polyfills-B6TNHZQ6.js:1
-onInvoke @ chunk-D5UOCUIB.js:7
-invoke @ polyfills-B6TNHZQ6.js:1
-run @ polyfills-B6TNHZQ6.js:1
-run @ chunk-D5UOCUIB.js:7
-next @ chunk-D5UOCUIB.js:7
-next @ chunk-D5UOCUIB.js:3
-_next @ chunk-D5UOCUIB.js:3
-next @ chunk-D5UOCUIB.js:3
-(anonymous) @ chunk-D5UOCUIB.js:3
-wt @ chunk-D5UOCUIB.js:3
-next @ chunk-D5UOCUIB.js:3
-emit @ chunk-D5UOCUIB.js:7
-aa @ chunk-D5UOCUIB.js:7
-Xc @ chunk-D5UOCUIB.js:7
-onInvokeTask @ chunk-D5UOCUIB.js:7
-invokeTask @ polyfills-B6TNHZQ6.js:1
-runTask @ polyfills-B6TNHZQ6.js:1
-invokeTask @ polyfills-B6TNHZQ6.js:1
-L @ polyfills-B6TNHZQ6.js:1
-H @ polyfills-B6TNHZQ6.js:1
-z @ polyfills-B6TNHZQ6.js:1
+Lo más simple (recomendado)
+
+Trata al backend como dominio aparte y apunta directamente a su /api. Así evitas el problema del index.html del frontend.
+
+Cambia tu environment.prod.ts a:
+
+export const environment = {
+  production: true,
+  apiBase: 'https://reservas-api.pixelnova.es/api',
+  emailjs: {
+    serviceId: 'service_8ye06ka',
+    templateId: 'template_lhxsfc9',
+    userId: 'pkQl3ciKlncnQMXk3'
+  }
+};
+
+
+En tus servicios Angular, usa siempre environment.apiBase y NO pongas otro /api extra:
+
+// subscription.service.ts (ejemplo)
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { environment } from '../environments/environment.prod'; // o el path que uses
+
+@Injectable({ providedIn: 'root' })
+export class SubscriptionService {
+  private base = environment.apiBase;
+
+  constructor(private http: HttpClient) {}
+
+  getDetails() {
+    return this.http.get(`${this.base}/subscription/details`);
+  }
+}
+
+
+Revisa que no tengas llamadas “huérfanas” tipo this.http.get('/api/...').
+Haz un buscar-en-todo el proyecto por '/api/ y cámbialas a ${environment.apiBase}/....
+
+(Si tienes entorno dev) alinea environment.ts para que el código sea igual en dev y prod:
+
+export const environment = {
+  production: false,
+  apiBase: 'http://localhost:3000/api'
+};
+
+
+Backend (CORS) — si tu frontend está en otro dominio:
+
+import cors from 'cors';
+app.use(cors({
+  origin: [
+    'https://TU-FRONTEND.com',          // tu dominio real del frontend
+    'https://TU-FRONTEND.onrender.com', // si lo usas
+    'http://localhost:4200'
+  ],
+  credentials: true
+}));
