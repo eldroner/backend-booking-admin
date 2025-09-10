@@ -3,6 +3,7 @@ import { AllowedBusinessModel } from '../models/allowed-business.model';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
 import Stripe from 'stripe';
+import { sendEmailChangedEmail, sendPasswordChangedEmail } from '../services/email.service';
 
 const stripe = new Stripe(process.env.STRIPE_API_KEY || '', {
   apiVersion: '2024-04-10',
@@ -46,16 +47,23 @@ export const updateAdminEmail = async (req: Request, res: Response) => {
       return res.status(409).json({ message: 'El nuevo email ya está en uso por otro negocio.' });
     }
 
+    const oldEmail = business.emailContacto; // Store old email
+
     // Update email in our database
     business.emailContacto = newEmail;
     await business.save();
 
+    // Send notification email
+    if (oldEmail) {
+        sendEmailChangedEmail({
+            to_email: oldEmail,
+            new_email: newEmail,
+            business_name: business.idNegocio
+        }).catch(err => console.error("Failed to send email change notification:", err));
+    }
+
     // Update email in Stripe if a customer ID exists
     if (business.stripeSubscriptionId) {
-      // We need the customer ID, not the subscription ID to update customer email
-      // This assumes the customer ID is linked to the subscription or can be retrieved.
-      // For simplicity, we'll assume we can get the customer ID from the subscription.
-      // In a real app, you might store customerId directly on the AllowedBusinessModel.
       const subscription = await stripe.subscriptions.retrieve(business.stripeSubscriptionId);
       if (subscription && subscription.customer) {
         await stripe.customers.update(subscription.customer as string, { email: newEmail });
@@ -80,26 +88,11 @@ export const updateAdminPassword = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'No autorizado: ID de negocio no encontrado en el token.' });
     }
 
-    console.log('Received password update request body:', req.body);
-    const { currentPassword } = UpdatePasswordSchema.parse(req.body); // Only parse currentPassword
-    const newPassword: string | undefined = req.body.newPassword; // Access directly
-    const confirmPassword: string | undefined = req.body.confirmPassword; // Access directly
+    const { currentPassword } = UpdatePasswordSchema.parse(req.body);
+    const newPassword = req.body.newPassword as string | undefined;
 
-    // Ensure passwords are strings before trimming
-    const trimmedNewPassword = newPassword !== undefined ? String(newPassword).trim() : undefined;
-    const trimmedConfirmPassword = confirmPassword !== undefined ? String(confirmPassword).trim() : undefined;
-
-    if (trimmedNewPassword === undefined || trimmedConfirmPassword === undefined) {
-      return res.status(400).json({ message: 'Las contraseñas no pueden ser indefinidas.' });
-    }
-
-    console.log('Backend - trimmedNewPassword:', trimmedNewPassword, 'length:', trimmedNewPassword.length);
-    console.log('Backend - trimmedConfirmPassword:', trimmedConfirmPassword, 'length:', trimmedConfirmPassword.length);
-    console.log('Backend - Comparison result (trimmedNewPassword === trimmedConfirmPassword):', trimmedNewPassword === trimmedConfirmPassword);
-
-    // Manual check for password mismatch
-    if (trimmedNewPassword !== trimmedConfirmPassword) {
-      return res.status(400).json({ message: 'Las nuevas contraseñas no coinciden.' });
+    if (!newPassword || newPassword.trim() !== req.body.confirmPassword?.trim()) {
+        return res.status(400).json({ message: 'Las nuevas contraseñas no coinciden o están vacías.' });
     }
 
     const business = await AllowedBusinessModel.findOne({ idNegocio });
@@ -115,11 +108,19 @@ export const updateAdminPassword = async (req: Request, res: Response) => {
     }
 
     // Hash new password
-    const hashedPassword = await bcrypt.hash(trimmedNewPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
 
     // Update password in our database
     business.password = hashedPassword;
     await business.save();
+
+    // Send notification email
+    if (business.emailContacto) {
+        sendPasswordChangedEmail({
+            to_email: business.emailContacto,
+            business_name: business.idNegocio
+        }).catch(err => console.error("Failed to send password change notification:", err));
+    }
 
     res.status(200).json({ message: 'Contraseña actualizada correctamente.' });
 

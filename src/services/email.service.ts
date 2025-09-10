@@ -181,3 +181,75 @@ export const sendWelcomeEmail = async (data: WelcomeEmailData) => {
     throw error;
   }
 };
+
+export const sendPasswordChangedEmail = async (data: { to_email: string, business_name: string }) => {
+  if (!SENDER_EMAIL || !SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    console.error('SMTP environment variables are not fully set.');
+    throw new Error('SMTP configuration missing.');
+  }
+
+  const emailContent = `
+  <div style="font-family: Arial, sans-serif; padding: 30px;">
+    <h2>Cambio de Contraseña</h2>
+    <p>Hola,</p>
+    <p>Te informamos que la contraseña de tu cuenta para el negocio <strong>${data.business_name}</strong> ha sido actualizada recientemente.</p>
+    <p>Si no has sido tú quien ha realizado este cambio, por favor, contacta con nosotros inmediatamente.</p>
+    <p>Saludos,<br>El equipo de Pixelnova</p>
+  </div>
+  `;
+
+  const mailOptions = {
+    from: SENDER_EMAIL,
+    to: data.to_email,
+    subject: `Notificación de seguridad: Contraseña actualizada para ${data.business_name}`,
+    html: emailContent,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email de cambio de contraseña enviado:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error al enviar email de cambio de contraseña:', error);
+    throw error;
+  }
+};
+
+export const sendEmailChangedEmail = async (data: { to_email: string, business_name: string, new_email: string }) => {
+  if (!SENDER_EMAIL || !SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    console.error('SMTP environment variables are not fully set.');
+    throw new Error('SMTP configuration missing.');
+  }
+
+  const emailContent = `
+  <div style="font-family: Arial, sans-serif; padding: 30px;">
+    <h2>Cambio de Email de Contacto</h2>
+    <p>Hola,</p>
+    <p>Te informamos que el email de contacto para tu negocio <strong>${data.business_name}</strong> ha sido cambiado a <strong>${data.new_email}</strong>.</p>
+    <p>A partir de ahora, todas las notificaciones se enviarán a esta nueva dirección.</p>
+    <p>Si no has sido tú quien ha realizado este cambio, por favor, contacta con nosotros inmediatamente.</p>
+    <p>Saludos,<br>El equipo de Pixelnova</p>
+  </div>
+  `;
+
+  const mailOptions = {
+    from: SENDER_EMAIL,
+    to: data.to_email, // Send to the old email address as a notification
+    subject: `Notificación de seguridad: Email de contacto actualizado para ${data.business_name}`,
+    html: emailContent,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email de cambio de email enviado:', info.messageId);
+    // Also send a notification to the new email address
+    const newEmailOptions = { ...mailOptions, to: data.new_email };
+    await transporter.sendMail(newEmailOptions);
+    console.log('Email de cambio de email enviado a la nueva dirección:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error al enviar email de cambio de email:', error);
+    throw error;
+  }
+};
+
