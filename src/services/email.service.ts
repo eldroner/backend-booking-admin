@@ -189,12 +189,31 @@ export const sendPasswordChangedEmail = async (data: { to_email: string, busines
   }
 
   const emailContent = `
-  <div style="font-family: Arial, sans-serif; padding: 30px;">
-    <h2>Cambio de Contraseña</h2>
-    <p>Hola,</p>
-    <p>Te informamos que la contraseña de tu cuenta para el negocio <strong>${data.business_name}</strong> ha sido actualizada recientemente.</p>
-    <p>Si no has sido tú quien ha realizado este cambio, por favor, contacta con nosotros inmediatamente.</p>
-    <p>Saludos,<br>El equipo de Pixelnova</p>
+  <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
+    <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
+      <h2 style="color: #d32f2f; text-align: center;">Notificación de Seguridad</h2>
+      <p>Hola,</p>
+      <p>Te informamos que la contraseña de tu cuenta para el negocio <strong>${data.business_name}</strong> ha sido actualizada recientemente.</p>
+      <p>Si no has sido tú quien ha realizado este cambio, por favor, contacta con nuestro equipo de soporte inmediatamente.</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="mailto:info@pixelnova.es" style="background-color: #007bff; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
+          Contactar a Soporte
+        </a>
+      </div>
+      <p style="margin-top: 40px;">Saludos cordiales,<br>El equipo de <strong>Pixelnova</strong></p>
+      <p style="font-size: 11px; color: #888; margin-top: 40px; text-align: center; line-height: 1.5;">
+        Este mensaje ha sido enviado por Pixelnova Digital Services.<br>
+        Dirección: Calle de Andalucía 9 · Email: <a href="mailto:info@pixelnova.es" style="color: #888;">info@pixelnova.es</a> · 
+        Tel: <a href="https://wa.me/34633703882" style="color: #888; text-decoration: none;">633703882</a><br>
+        Los datos personales serán tratados conforme al RGPD y la LOPDGDD. Más información en nuestra
+        <a href="https://pixelnova.es/privacy-policy" style="color: #d32f2f; text-decoration: none;">política de privacidad</a>.
+      </p>
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="https://pixelnova.es/" target="_blank" rel="noopener">
+          <img src="https://raw.githubusercontent.com/eldroner/mis-assets/main/pixelnova-logo-gris-rojo-sin-fondo.png" alt="Logo Pixelnova" style="max-height: 40px; opacity: 0.8;">
+        </a>
+      </div>
+    </div>
   </div>
   `;
 
@@ -222,13 +241,32 @@ export const sendEmailChangedEmail = async (data: { to_email: string, business_n
   }
 
   const emailContent = `
-  <div style="font-family: Arial, sans-serif; padding: 30px;">
-    <h2>Cambio de Email de Contacto</h2>
-    <p>Hola,</p>
-    <p>Te informamos que el email de contacto para tu negocio <strong>${data.business_name}</strong> ha sido cambiado a <strong>${data.new_email}</strong>.</p>
-    <p>A partir de ahora, todas las notificaciones se enviarán a esta nueva dirección.</p>
-    <p>Si no has sido tú quien ha realizado este cambio, por favor, contacta con nosotros inmediatamente.</p>
-    <p>Saludos,<br>El equipo de Pixelnova</p>
+  <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
+    <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
+      <h2 style="color: #d32f2f; text-align: center;">Notificación de Seguridad</h2>
+      <p>Hola,</p>
+      <p>Te informamos que el email de contacto para tu negocio <strong>${data.business_name}</strong> ha sido cambiado a <strong>${data.new_email}</strong>.</p>
+      <p>A partir de ahora, todas las notificaciones de reservas y administración se enviarán a esta nueva dirección.</p>
+      <p>Si no has sido tú quien ha realizado este cambio, por favor, contacta con nuestro equipo de soporte inmediatamente.</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="mailto:info@pixelnova.es" style="background-color: #007bff; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
+          Contactar a Soporte
+        </a>
+      </div>
+      <p style="margin-top: 40px;">Saludos cordiales,<br>El equipo de <strong>Pixelnova</strong></p>
+      <p style="font-size: 11px; color: #888; margin-top: 40px; text-align: center; line-height: 1.5;">
+        Este mensaje ha sido enviado por Pixelnova Digital Services.<br>
+        Dirección: Calle de Andalucía 9 · Email: <a href="mailto:info@pixelnova.es" style="color: #888;">info@pixelnova.es</a> · 
+        Tel: <a href="https://wa.me/34633703882" style="color: #888; text-decoration: none;">633703882</a><br>
+        Los datos personales serán tratados conforme al RGPD y la LOPDGDD. Más información en nuestra
+        <a href="https://pixelnova.es/privacy-policy" style="color: #d32f2f; text-decoration: none;">política de privacidad</a>.
+      </p>
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="https://pixelnova.es/" target="_blank" rel="noopener">
+          <img src="https://raw.githubusercontent.com/eldroner/mis-assets/main/pixelnova-logo-gris-rojo-sin-fondo.png" alt="Logo Pixelnova" style="max-height: 40px; opacity: 0.8;">
+        </a>
+      </div>
+    </div>
   </div>
   `;
 
