@@ -8,6 +8,7 @@ import { loginByEmail } from '../controllers/auth.controller'; // Importar el nu
 import { initializeBusiness } from '../controllers/business.controller'; // Importar el nuevo controlador de negocio
 import { authenticateAdmin } from '../middleware/auth.middleware'; // Importar el middleware de autenticación
 import * as superAdminController from '../controllers/super-admin.controller';
+import * as adminController from '../controllers/admin.controller';
 import { superAdminAuth } from '../middleware/super-admin-auth.middleware';
 import { uploadImage, uploadImages } from '../controllers/upload.controller';
 import multer = require('multer');
@@ -17,6 +18,10 @@ const router = express.Router();
 
 // Rutas de autenticación de administrador
 router.post('/admin/login-by-email', loginByEmail);
+
+// Rutas de gestión de cuenta de administrador
+router.put('/admin/update-email', authenticateAdmin, adminController.updateAdminEmail);
+router.put('/admin/update-password', authenticateAdmin, adminController.updateAdminPassword);
 
 // Rutas de gestión de negocio
 router.post('/business/initialize', authenticateAdmin, initializeBusiness);

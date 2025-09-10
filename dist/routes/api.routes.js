@@ -46,6 +46,7 @@ const auth_controller_1 = require("../controllers/auth.controller"); // Importar
 const business_controller_1 = require("../controllers/business.controller"); // Importar el nuevo controlador de negocio
 const auth_middleware_1 = require("../middleware/auth.middleware"); // Importar el middleware de autenticación
 const superAdminController = __importStar(require("../controllers/super-admin.controller"));
+const adminController = __importStar(require("../controllers/admin.controller"));
 const super_admin_auth_middleware_1 = require("../middleware/super-admin-auth.middleware");
 const upload_controller_1 = require("../controllers/upload.controller");
 const multer = require("multer");
@@ -53,6 +54,9 @@ const upload = multer({ storage: multer.memoryStorage() });
 const router = express_1.default.Router();
 // Rutas de autenticación de administrador
 router.post('/admin/login-by-email', auth_controller_1.loginByEmail);
+// Rutas de gestión de cuenta de administrador
+router.put('/admin/update-email', auth_middleware_1.authenticateAdmin, adminController.updateAdminEmail);
+router.put('/admin/update-password', auth_middleware_1.authenticateAdmin, adminController.updateAdminPassword);
 // Rutas de gestión de negocio
 router.post('/business/initialize', auth_middleware_1.authenticateAdmin, business_controller_1.initializeBusiness);
 // Configuración del negocio (GET es público, PUT protegido)
@@ -60,9 +64,12 @@ router.get('/config', config_controller_1.getConfig);
 router.put('/config', auth_middleware_1.authenticateAdmin, config_controller_1.updateConfig);
 router.get('/config/maps-api-key', config_controller_1.getGoogleMapsApiKey);
 router.get('/config/maps-map-id', config_controller_1.getGoogleMapsMapId);
-// --- Payment Routes ---
+// --- Payment & Subscription Routes ---
 router.post('/payments/create-checkout-session', payment_controller_1.createCheckoutSession);
 router.get('/payments/session-status', payment_controller_1.getCheckoutSessionStatus);
+router.post('/subscription/cancel', auth_middleware_1.authenticateAdmin, payment_controller_1.cancelSubscription);
+router.post('/subscription/revert-cancellation', auth_middleware_1.authenticateAdmin, payment_controller_1.revertSubscriptionCancellation);
+router.get('/subscription/details', auth_middleware_1.authenticateAdmin, payment_controller_1.getSubscriptionDetails);
 // Rutas de subida de imágenes
 router.post('/upload/image', auth_middleware_1.authenticateAdmin, upload.single('image'), upload_controller_1.uploadImage);
 router.post('/upload/images', auth_middleware_1.authenticateAdmin, upload.array('images', 10), upload_controller_1.uploadImages);

@@ -5,10 +5,6 @@ import { AllowedBusinessModel } from '../models/allowed-business.model';
 import { BusinessConfigModel } from '../models/config.model';
 import { sendWelcomeEmail } from '../services/email.service';
 
-interface AuthenticatedRequest extends Request {
-  idNegocio: string;
-}
-
 const stripe = new Stripe(process.env.STRIPE_API_KEY || '', {
   apiVersion: '2024-04-10',
 });
@@ -174,9 +170,14 @@ export const getCheckoutSessionStatus = async (req: Request, res: Response) => {
   }
 };
 
-export const getSubscriptionDetails = async (req: AuthenticatedRequest, res: Response) => {
+export const getSubscriptionDetails = async (req: Request, res: Response) => {
   try {
-    const business = await AllowedBusinessModel.findOne({ idNegocio: req.idNegocio });
+    const idNegocio = req.idNegocio;
+    if (!idNegocio) {
+      return res.status(401).json({ message: 'No autorizado: ID de negocio no encontrado en el token.' });
+    }
+
+    const business = await AllowedBusinessModel.findOne({ idNegocio: idNegocio });
     if (!business) {
       return res.status(404).json({ error: 'Business not found.' });
     }
@@ -195,9 +196,14 @@ export const getSubscriptionDetails = async (req: AuthenticatedRequest, res: Res
   }
 };
 
-export const cancelSubscription = async (req: AuthenticatedRequest, res: Response) => {
+export const cancelSubscription = async (req: Request, res: Response) => {
   try {
-    const business = await AllowedBusinessModel.findOne({ idNegocio: req.idNegocio });
+    const idNegocio = req.idNegocio;
+    if (!idNegocio) {
+      return res.status(401).json({ message: 'No autorizado: ID de negocio no encontrado en el token.' });
+    }
+
+    const business = await AllowedBusinessModel.findOne({ idNegocio: idNegocio });
     if (!business || !business.stripeSubscriptionId) {
       return res.status(404).json({ error: 'Subscription not found for this business.' });
     }
@@ -215,9 +221,14 @@ export const cancelSubscription = async (req: AuthenticatedRequest, res: Respons
   }
 };
 
-export const revertSubscriptionCancellation = async (req: AuthenticatedRequest, res: Response) => {
+export const revertSubscriptionCancellation = async (req: Request, res: Response) => {
   try {
-    const business = await AllowedBusinessModel.findOne({ idNegocio: req.idNegocio });
+    const idNegocio = req.idNegocio;
+    if (!idNegocio) {
+      return res.status(401).json({ message: 'No autorizado: ID de negocio no encontrado en el token.' });
+    }
+
+    const business = await AllowedBusinessModel.findOne({ idNegocio: idNegocio });
     if (!business || !business.stripeSubscriptionId) {
       return res.status(404).json({ error: 'Subscription not found for this business.' });
     }
