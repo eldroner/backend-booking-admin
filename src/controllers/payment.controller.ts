@@ -182,6 +182,10 @@ export const getSubscriptionDetails = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Business not found.' });
     }
 
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     res.json({
       idNegocio: business.idNegocio,
       emailContacto: business.emailContacto,
