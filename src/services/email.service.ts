@@ -291,3 +291,131 @@ export const sendEmailChangedEmail = async (data: { to_email: string, business_n
   }
 };
 
+interface BookingConfirmationEmailData {
+  to_email: string;
+  user_name: string;
+  verification_link: string;
+  cancellation_link: string;
+  business_name: string;
+  service_name: string;
+  booking_date: string;
+  booking_time: string;
+}
+
+export const sendBookingConfirmationEmail = async (data: BookingConfirmationEmailData) => {
+  if (!SENDER_EMAIL || !SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    console.error('SMTP environment variables are not fully set.');
+    throw new Error('SMTP configuration missing.');
+  }
+
+  const emailContent = `
+  <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
+    <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
+      
+      <h2 style="color: #28a745; text-align: center;">¡Confirma tu reserva!</h2>
+      
+      <p>Hola <strong>${data.user_name}</strong>,</p>
+      
+      <p>Gracias por solicitar una reserva en <strong>${data.business_name}</strong>. Por favor, confirma tu cita para el servicio:</p>
+      
+      <p style="font-size: 18px; font-weight: bold; color: #333;">${data.service_name}</p>
+
+      <p>La cita está programada para:</p>
+
+      <p style="font-size: 16px; font-weight: bold;">
+        📅 <span style="color: #444;">${data.booking_date}</span><br>
+        🕓 <span style="color: #444;">${data.booking_time}</span>
+      </p>
+
+      <p>Para asegurar tu plaza, haz clic en el siguiente botón:</p>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${data.verification_link}" style="background-color: #28a745; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
+          Confirmar mi reserva
+        </a>
+      </div>
+
+      <p>Si no confirmas la reserva, esta se cancelará automáticamente. Si deseas cancelar tu reserva, puedes hacerlo aquí: <a href="${data.cancellation_link}">Cancelar</a>.</p>
+      
+      <p style="margin-top: 40px;">Saludos cordiales,<br>
+      El equipo de <strong>${data.business_name}</strong></p>
+
+    </div>
+  </div>
+  `;
+
+  const mailOptions = {
+    from: SENDER_EMAIL,
+    to: data.to_email,
+    subject: `Confirma tu reserva en ${data.business_name}`,
+    html: emailContent,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email de confirmación de reserva enviado:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error al enviar email de confirmación de reserva con Nodemailer:', error);
+    throw error;
+  }
+};
+
+interface AdminNotificationEmailData {
+  to_email: string;
+  user_name: string;
+  business_name: string;
+  service_name: string;
+  booking_date: string;
+  booking_time: string;
+}
+
+export const sendAdminNotificationEmail = async (data: AdminNotificationEmailData) => {
+  if (!SENDER_EMAIL || !SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    console.error('SMTP environment variables are not fully set.');
+    throw new Error('SMTP configuration missing.');
+  }
+
+  const emailContent = `
+  <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
+    <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
+      
+      <h2 style="color: #007bff; text-align: center;">Nueva solicitud de reserva</h2>
+      
+      <p>Hola,</p>
+      
+      <p>Has recibido una nueva solicitud de reserva en <strong>${data.business_name}</strong>.</p>
+      
+      <p><strong>Detalles de la reserva:</strong></p>
+      <ul>
+        <li><strong>Cliente:</strong> ${data.user_name}</li>
+        <li><strong>Servicio:</strong> ${data.service_name}</li>
+        <li><strong>Fecha:</strong> ${data.booking_date}</li>
+        <li><strong>Hora:</strong> ${data.booking_time}</li>
+      </ul>
+
+      <p>La reserva está pendiente de la confirmación del cliente.</p>
+      
+      <p style="margin-top: 40px;">Saludos cordiales,<br>
+      Tu sistema de reservas de <strong>Pixelnova</strong></p>
+
+    </div>
+  </div>
+  `;
+
+  const mailOptions = {
+    from: SENDER_EMAIL,
+    to: data.to_email,
+    subject: `Nueva solicitud de reserva de ${data.user_name}`,
+    html: emailContent,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email de notificación a admin enviado:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error al enviar email de notificación a admin con Nodemailer:', error);
+    throw error;
+  }
+};

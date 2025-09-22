@@ -4,6 +4,7 @@ import { getReservas, createReserva, deleteReserva, confirmarReserva, confirmarR
 import { deleteFechaBloqueada, getFechasBloqueadas, addFechaBloqueada } from '../controllers/bloqueo.controller';
 import { getServicios } from '../controllers/servicios.controller';
 import { createCheckoutSession, getCheckoutSessionStatus, cancelSubscription, getSubscriptionDetails, revertSubscriptionCancellation } from '../controllers/payment.controller';
+import { sendBookingConfirmation, sendAdminNotification } from '../controllers/email.controller'; // Importar el nuevo controlador de email
 import { loginByEmail } from '../controllers/auth.controller'; // Importar el nuevo controlador
 import { initializeBusiness } from '../controllers/business.controller'; // Importar el nuevo controlador de negocio
 import { authenticateAdmin } from '../middleware/auth.middleware'; // Importar el middleware de autenticación
@@ -38,6 +39,10 @@ router.get('/payments/session-status', getCheckoutSessionStatus);
 router.post('/subscription/cancel', authenticateAdmin, cancelSubscription);
 router.post('/subscription/revert-cancellation', authenticateAdmin, revertSubscriptionCancellation);
 router.get('/subscription/details', authenticateAdmin, getSubscriptionDetails);
+
+// --- Email Routes ---
+router.post('/email/send-booking-confirmation', sendBookingConfirmation);
+router.post('/email/send-admin-notification', sendAdminNotification);
 
 
 // Rutas de subida de imágenes

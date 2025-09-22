@@ -414,7 +414,7 @@ export const cancelarReservaPorToken = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Reserva no encontrada o ya cancelada' });
     }
 
-    res.json({ success: true, message: 'Reserva cancelada correctamente' });
+    res.json({ success: true, message: 'Reserva cancelada correctamente', businessId: reserva.idNegocio });
   } catch (error) {
     console.error('Error al cancelar reserva por token:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
