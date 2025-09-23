@@ -3,12 +3,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// SMTP Configuration
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const SENDER_EMAIL = process.env.SENDER_EMAIL;
 
+// --- INTERFACES ---
 interface CancellationEmailData {
   user_name: string;
   to_email: string;
@@ -24,272 +26,16 @@ interface WelcomeEmailData {
   business_id: string;
 }
 
-const transporter = nodemailer.createTransport({
-  host: SMTP_HOST,
-  port: SMTP_PORT,
-  secure: SMTP_PORT === 465,
-  auth: {
-    user: SMTP_USER,
-    pass: SMTP_PASS,
-  },
-});
+interface PasswordChangedEmailData {
+    to_email: string;
+    business_name: string;
+}
 
-export const sendCancellationEmail = async (data: CancellationEmailData) => {
-  if (!SENDER_EMAIL || !SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    console.error('SMTP environment variables are not fully set.');
-    throw new Error('SMTP configuration missing.');
-  }
-
-  const emailContent = `
-  <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-    <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
-      
-      <h2 style="color: #d32f2f; text-align: center;">Cancelación de cita</h2>
-      
-      <p>Hola <strong>${data.user_name}</strong>,</p>
-      
-      <p>Lamentamos informarte que tu reserva para el siguiente servicio ha sido cancelada debido a que no fue verificada en el tiempo establecido:</p>
-      
-      <p style="font-size: 18px; font-weight: bold; color: #333;">${data.service_name}</p>
-
-      <p>La cita estaba programada para:</p>
-
-      <p style="font-size: 16px; font-weight: bold;">
-        📅 <span style="color: #444;">${data.booking_date}</span><br>
-        🕓 <span style="color: #444;">${data.booking_time}</span>
-      </p>
-
-      <p>Si todavía deseas realizar este servicio, puedes crear una nueva reserva haciendo clic en el siguiente botón:</p>
-
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="https://reservas.pixelnova.es/${data.business_id}" style="background-color: #d32f2f; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
-          Crear nueva reserva
-        </a>
-      </div>
-
-      <p>Te invitamos a reservar de nuevo en el horario que mejor se adapte a ti.<br>Si necesitas ayuda, no dudes en contactarnos.</p>
-      
-      <p style="margin-top: 40px;">Saludos cordiales,<br>
-      El equipo de <strong>${data.business_name}</strong></p>
-
-      <p style="font-size: 11px; color: #888; margin-top: 40px; text-align: center; line-height: 1.5;">
-        Este mensaje ha sido enviado por Pixelnova Digital Services.<br>
-        Dirección: Calle de Andalucía 9 · Email: <a href="mailto:info@pixelnova.es" style="color: #888;">info@pixelnova.es</a> · 
-        Tel: <a href="https://wa.me/34633703882" style="color: #888; text-decoration: none;">633703882</a><br>
-        Los datos personales serán tratados conforme al RGPD y la LOPDGDD. Más información en nuestra
-        <a href="https://pixelnova.es/privacy-policy" style="color: #d32f2f; text-decoration: none;">política de privacidad</a>.
-      </p>
-
-      <div style="text-align: center; margin-top: 20px;">
-        <a href="https://pixelnova.es/" target="_blank" rel="noopener">
-          <img src="https://raw.githubusercontent.com/eldroner/mis-assets/main/pixelnova-logo-gris-rojo-sin-fondo.png" alt="Logo Pixelnova" style="max-height: 40px; opacity: 0.8;">
-        </a>
-      </div>
-
-    </div>
-  </div>
-  `;
-
-  const mailOptions = {
-    from: SENDER_EMAIL,
-    to: data.to_email,
-    subject: `Reserva cancelada en ${data.business_name}`,
-    html: emailContent,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email de cancelación enviado:', info.messageId);
-    return info;
-  } catch (error) {
-    console.error('Error al enviar email de cancelación con Nodemailer:', error);
-    throw error;
-  }
-};
-
-export const sendWelcomeEmail = async (data: WelcomeEmailData) => {
-  if (!SENDER_EMAIL || !SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    console.error('SMTP environment variables are not fully set.');
-    throw new Error('SMTP configuration missing.');
-  }
-
-  const adminUrl = `https://reservas.pixelnova.es/${data.business_id}/admin`;
-
-  const emailContent = `
-  <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-    <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
-      
-      <h2 style="color: #28a745; text-align: center;">¡Bienvenido a tu nuevo sistema de reservas!</h2>
-      
-      <p>Hola,</p>
-      
-      <p>¡Gracias por registrarte! Tu espacio de reservas ya está casi listo. Aquí tienes el enlace para acceder a tu panel de administración y terminar la configuración:</p>
-      
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${adminUrl}" style="background-color: #007bff; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
-          Acceder a mi panel de admin
-        </a>
-      </div>
-
-      <p>Tu URL para que los clientes reserven es:</p>
-      <p style="text-align: center; font-size: 16px; font-weight: bold;">
-        <a href="https://reservas.pixelnova.es/${data.business_id}" style="color: #007bff;">https://reservas.pixelnova.es/${data.business_id}</a>
-      </p>
-
-      <p><strong>Primeros pasos recomendados:</strong></p>
-      <ol>
-        <li>Accede a tu panel de administración.</li>
-        <li>Establece tu horario de trabajo.</li>
-        <li>Configura los servicios que ofreces.</li>
-        <li>¡Comparte tu enlace de reservas!</li>
-      </ol>
-      
-      <p style="margin-top: 40px;">Saludos cordiales,<br>
-      El equipo de <strong>Pixelnova</strong></p>
-
-      <p style="font-size: 11px; color: #888; margin-top: 40px; text-align: center; line-height: 1.5;">
-        Este mensaje ha sido enviado por Pixelnova Digital Services.<br>
-        Dirección: Calle de Andalucía 9 · Email: <a href="mailto:info@pixelnova.es" style="color: #888;">info@pixelnova.es</a> · 
-        Tel: <a href="https://wa.me/34633703882" style="color: #888; text-decoration: none;">633703882</a><br>
-        Los datos personales serán tratados conforme al RGPD y la LOPDGDD. Más información en nuestra
-        <a href="https://pixelnova.es/privacy-policy" style="color: #d32f2f; text-decoration: none;">política de privacidad</a>.
-      </p>
-
-      <div style="text-align: center; margin-top: 20px;">
-        <a href="https://pixelnova.es/" target="_blank" rel="noopener">
-          <img src="https://raw.githubusercontent.com/eldroner/mis-assets/main/pixelnova-logo-gris-rojo-sin-fondo.png" alt="Logo Pixelnova" style="max-height: 40px; opacity: 0.8;">
-        </a>
-      </div>
-
-    </div>
-  </div>
-  `;
-
-  const mailOptions = {
-    from: SENDER_EMAIL,
-    to: data.to_email,
-    subject: '¡Bienvenido! Comienza a gestionar tus reservas',
-    html: emailContent,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email de bienvenida enviado:', info.messageId);
-    return info;
-  } catch (error) {
-    console.error('Error al enviar email de bienvenida con Nodemailer:', error);
-    throw error;
-  }
-};
-
-export const sendPasswordChangedEmail = async (data: { to_email: string, business_name: string }) => {
-  if (!SENDER_EMAIL || !SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    console.error('SMTP environment variables are not fully set.');
-    throw new Error('SMTP configuration missing.');
-  }
-
-  const emailContent = `
-  <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-    <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
-      <h2 style="color: #d32f2f; text-align: center;">Notificación de Seguridad</h2>
-      <p>Hola,</p>
-      <p>Te informamos que la contraseña de tu cuenta para el negocio <strong>${data.business_name}</strong> ha sido actualizada recientemente.</p>
-      <p>Si no has sido tú quien ha realizado este cambio, por favor, contacta con nuestro equipo de soporte inmediatamente.</p>
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="mailto:info@pixelnova.es" style="background-color: #007bff; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
-          Contactar a Soporte
-        </a>
-      </div>
-      <p style="margin-top: 40px;">Saludos cordiales,<br>El equipo de <strong>Pixelnova</strong></p>
-      <p style="font-size: 11px; color: #888; margin-top: 40px; text-align: center; line-height: 1.5;">
-        Este mensaje ha sido enviado por Pixelnova Digital Services.<br>
-        Dirección: Calle de Andalucía 9 · Email: <a href="mailto:info@pixelnova.es" style="color: #888;">info@pixelnova.es</a> · 
-        Tel: <a href="https://wa.me/34633703882" style="color: #888; text-decoration: none;">633703882</a><br>
-        Los datos personales serán tratados conforme al RGPD y la LOPDGDD. Más información en nuestra
-        <a href="https://pixelnova.es/privacy-policy" style="color: #d32f2f; text-decoration: none;">política de privacidad</a>.
-      </p>
-      <div style="text-align: center; margin-top: 20px;">
-        <a href="https://pixelnova.es/" target="_blank" rel="noopener">
-          <img src="https://raw.githubusercontent.com/eldroner/mis-assets/main/pixelnova-logo-gris-rojo-sin-fondo.png" alt="Logo Pixelnova" style="max-height: 40px; opacity: 0.8;">
-        </a>
-      </div>
-    </div>
-  </div>
-  `;
-
-  const mailOptions = {
-    from: SENDER_EMAIL,
-    to: data.to_email,
-    subject: `Notificación de seguridad: Contraseña actualizada para ${data.business_name}`,
-    html: emailContent,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email de cambio de contraseña enviado:', info.messageId);
-    return info;
-  } catch (error) {
-    console.error('Error al enviar email de cambio de contraseña:', error);
-    throw error;
-  }
-};
-
-export const sendEmailChangedEmail = async (data: { to_email: string, business_name: string, new_email: string }) => {
-  if (!SENDER_EMAIL || !SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    console.error('SMTP environment variables are not fully set.');
-    throw new Error('SMTP configuration missing.');
-  }
-
-  const emailContent = `
-  <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-    <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
-      <h2 style="color: #d32f2f; text-align: center;">Notificación de Seguridad</h2>
-      <p>Hola,</p>
-      <p>Te informamos que el email de contacto para tu negocio <strong>${data.business_name}</strong> ha sido cambiado a <strong>${data.new_email}</strong>.</p>
-      <p>A partir de ahora, todas las notificaciones de reservas y administración se enviarán a esta nueva dirección.</p>
-      <p>Si no has sido tú quien ha realizado este cambio, por favor, contacta con nuestro equipo de soporte inmediatamente.</p>
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="mailto:info@pixelnova.es" style="background-color: #007bff; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
-          Contactar a Soporte
-        </a>
-      </div>
-      <p style="margin-top: 40px;">Saludos cordiales,<br>El equipo de <strong>Pixelnova</strong></p>
-      <p style="font-size: 11px; color: #888; margin-top: 40px; text-align: center; line-height: 1.5;">
-        Este mensaje ha sido enviado por Pixelnova Digital Services.<br>
-        Dirección: Calle de Andalucía 9 · Email: <a href="mailto:info@pixelnova.es" style="color: #888;">info@pixelnova.es</a> · 
-        Tel: <a href="https://wa.me/34633703882" style="color: #888; text-decoration: none;">633703882</a><br>
-        Los datos personales serán tratados conforme al RGPD y la LOPDGDD. Más información en nuestra
-        <a href="https://pixelnova.es/privacy-policy" style="color: #d32f2f; text-decoration: none;">política de privacidad</a>.
-      </p>
-      <div style="text-align: center; margin-top: 20px;">
-        <a href="https://pixelnova.es/" target="_blank" rel="noopener">
-          <img src="https://raw.githubusercontent.com/eldroner/mis-assets/main/pixelnova-logo-gris-rojo-sin-fondo.png" alt="Logo Pixelnova" style="max-height: 40px; opacity: 0.8;">
-        </a>
-      </div>
-    </div>
-  </div>
-  `;
-
-  const mailOptions = {
-    from: SENDER_EMAIL,
-    to: data.to_email, // Send to the old email address as a notification
-    subject: `Notificación de seguridad: Email de contacto actualizado para ${data.business_name}`,
-    html: emailContent,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email de cambio de email enviado:', info.messageId);
-    // Also send a notification to the new email address
-    const newEmailOptions = { ...mailOptions, to: data.new_email };
-    await transporter.sendMail(newEmailOptions);
-    console.log('Email de cambio de email enviado a la nueva dirección:', info.messageId);
-    return info;
-  } catch (error) {
-    console.error('Error al enviar email de cambio de email:', error);
-    throw error;
-  }
-};
+interface EmailChangedEmailData {
+    to_email: string;
+    business_name: string;
+    new_email: string;
+}
 
 interface BookingConfirmationEmailData {
   to_email: string;
@@ -302,65 +48,6 @@ interface BookingConfirmationEmailData {
   booking_time: string;
 }
 
-export const sendBookingConfirmationEmail = async (data: BookingConfirmationEmailData) => {
-  if (!SENDER_EMAIL || !SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    console.error('SMTP environment variables are not fully set.');
-    throw new Error('SMTP configuration missing.');
-  }
-
-  const emailContent = `
-  <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-    <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
-      
-      <h2 style="color: #28a745; text-align: center;">¡Confirma tu reserva!</h2>
-      
-      <p>Hola <strong>${data.user_name}</strong>,</p>
-      
-      <p>Gracias por solicitar una reserva en <strong>${data.business_name}</strong>. Por favor, confirma tu cita para el servicio:</p>
-      
-      <p style="font-size: 18px; font-weight: bold; color: #333;">${data.service_name}</p>
-
-      <p>La cita está programada para:</p>
-
-      <p style="font-size: 16px; font-weight: bold;">
-        📅 <span style="color: #444;">${data.booking_date}</span><br>
-        🕓 <span style="color: #444;">${data.booking_time}</span>
-      </p>
-
-      <p>Para asegurar tu plaza, haz clic en el siguiente botón:</p>
-
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${data.verification_link}" style="background-color: #28a745; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
-          Confirmar mi reserva
-        </a>
-      </div>
-
-      <p>Si no confirmas la reserva, esta se cancelará automáticamente. Si deseas cancelar tu reserva, puedes hacerlo aquí: <a href="${data.cancellation_link}">Cancelar</a>.</p>
-      
-      <p style="margin-top: 40px;">Saludos cordiales,<br>
-      El equipo de <strong>${data.business_name}</strong></p>
-
-    </div>
-  </div>
-  `;
-
-  const mailOptions = {
-    from: SENDER_EMAIL,
-    to: data.to_email,
-    subject: `Confirma tu reserva en ${data.business_name}`,
-    html: emailContent,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email de confirmación de reserva enviado:', info.messageId);
-    return info;
-  } catch (error) {
-    console.error('Error al enviar email de confirmación de reserva con Nodemailer:', error);
-    throw error;
-  }
-};
-
 interface AdminNotificationEmailData {
   to_email: string;
   user_name: string;
@@ -370,50 +57,248 @@ interface AdminNotificationEmailData {
   booking_time: string;
 }
 
-export const sendAdminNotificationEmail = async (data: AdminNotificationEmailData) => {
-  if (!SENDER_EMAIL || !SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    console.error('SMTP environment variables are not fully set.');
-    throw new Error('SMTP configuration missing.');
-  }
 
-  const emailContent = `
-  <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-    <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
-      
-      <h2 style="color: #007bff; text-align: center;">Nueva solicitud de reserva</h2>
-      
-      <p>Hola,</p>
-      
-      <p>Has recibido una nueva solicitud de reserva en <strong>${data.business_name}</strong>.</p>
-      
-      <p><strong>Detalles de la reserva:</strong></p>
-      <ul>
-        <li><strong>Cliente:</strong> ${data.user_name}</li>
-        <li><strong>Servicio:</strong> ${data.service_name}</li>
-        <li><strong>Fecha:</strong> ${data.booking_date}</li>
-        <li><strong>Hora:</strong> ${data.booking_time}</li>
-      </ul>
+// --- TRANSPORTER ---
+const transporter = nodemailer.createTransport({
+  host: SMTP_HOST,
+  port: SMTP_PORT,
+  secure: SMTP_PORT === 465,
+  auth: {
+    user: SMTP_USER,
+    pass: SMTP_PASS,
+  },
+});
 
-      <p>La reserva está pendiente de la confirmación del cliente.</p>
+
+// --- TEMPLATE WRAPPER ---
+const emailWrapper = (title: string, content: string): string => {
+  return `
+  <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+    <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-top: 5px solid #8B1C20; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
       
-      <p style="margin-top: 40px;">Saludos cordiales,<br>
-      Tu sistema de reservas de <strong>Pixelnova</strong></p>
+      <div style="padding: 30px 30px 20px 30px; text-align: center;">
+        <a href="https://pixelnova.es/" target="_blank" rel="noopener">
+          <img src="https://raw.githubusercontent.com/eldroner/mis-assets/main/pixelnova-logo-gris-rojo-sin-fondo.png" alt="Logo Pixelnova" style="max-height: 45px; opacity: 0.9;">
+        </a>
+      </div>
+
+      <div style="padding: 0 30px 30px 30px;">
+        <h2 style="color: #8B1C20; text-align: center; font-size: 24px; margin-bottom: 20px;">${title}</h2>
+        
+        <div style="color: #555555; line-height: 1.6;">
+          ${content}
+        </div>
+        
+        <div style="border-top: 1px solid #eeeeee; margin: 30px 0;"></div>
+
+        <p style="font-size: 11px; color: #888888; text-align: center; line-height: 1.5;">
+          Este mensaje ha sido enviado por Pixelnova Digital Services.<br>
+          Dirección: Calle de Andalucía 9 · Email: <a href="mailto:info@pixelnova.es" style="color: #888888;">info@pixelnova.es</a> · 
+          Tel: <a href="https://wa.me/34633703882" style="color: #888888; text-decoration: none;">633703882</a><br>
+          Los datos personales serán tratados conforme al RGPD y la LOPDGDD. Más información en nuestra
+          <a href="https://pixelnova.es/privacy-policy" style="color: #BE5B5D; text-decoration: none;">política de privacidad</a>.
+        </p>
+      </div>
 
     </div>
   </div>
+  `;
+};
+
+
+// --- EMAIL FUNCTIONS ---
+
+export const sendCancellationEmail = async (data: CancellationEmailData) => {
+  const title = "Cancelación de Cita";
+  const content = `
+    <p>Hola <strong>${data.user_name}</strong>,</p>
+    <p>Lamentamos informarte que tu reserva para el servicio <strong>${data.service_name}</strong> ha sido cancelada debido a que no fue verificada en el tiempo establecido.</p>
+    <p>La cita estaba programada para el <strong>${data.booking_date}</strong> a las <strong>${data.booking_time}</strong>.</p>
+    <p>Si todavía deseas el servicio, puedes crear una nueva reserva:</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="https://reservas.pixelnova.es/${data.business_id}" style="background-color: #CF0D0E; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
+        Crear Nueva Reserva
+      </a>
+    </div>
+    <p style="margin-top: 20px;">Saludos cordiales,<br>El equipo de <strong>${data.business_name}</strong></p>
+  `;
+
+  const mailOptions = {
+    from: SENDER_EMAIL,
+    to: data.to_email,
+    subject: `Reserva cancelada en ${data.business_name}`,
+    html: emailWrapper(title, content),
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Error al enviar email de cancelación con Nodemailer:', error);
+    throw error;
+  }
+};
+
+export const sendWelcomeEmail = async (data: WelcomeEmailData) => {
+  const adminUrl = `https://reservas.pixelnova.es/${data.business_id}/admin`;
+  const publicUrl = `https://reservas.pixelnova.es/${data.business_id}`;
+
+  const title = "¡Bienvenido a tu Sistema de Reservas!";
+  const content = `
+    <p>¡Gracias por registrarte! Tu espacio de reservas ya está casi listo.</p>
+    <p>Accede a tu panel de administración para terminar la configuración:</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${adminUrl}" style="background-color: #CF0D0E; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
+        Acceder a mi Panel de Admin
+      </a>
+    </div>
+    <p>La URL para que tus clientes reserven es: <a href="${publicUrl}" style="color: #BE5B5D; text-decoration: none;">${publicUrl}</a></p>
+    <p><strong>Primeros pasos recomendados:</strong></p>
+    <ol style="padding-left: 20px;">
+      <li>Accede a tu panel de administración.</li>
+      <li>Establece tu horario de trabajo.</li>
+      <li>Configura los servicios que ofreces.</li>
+      <li>¡Comparte tu enlace de reservas!</li>
+    </ol>
+    <p style="margin-top: 20px;">Saludos cordiales,<br>El equipo de <strong>Pixelnova</strong></p>
+  `;
+
+  const mailOptions = {
+    from: SENDER_EMAIL,
+    to: data.to_email,
+    subject: '¡Bienvenido! Comienza a gestionar tus reservas',
+    html: emailWrapper(title, content),
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Error al enviar email de bienvenida con Nodemailer:', error);
+    throw error;
+  }
+};
+
+export const sendPasswordChangedEmail = async (data: PasswordChangedEmailData) => {
+  const title = "Notificación de Seguridad";
+  const content = `
+    <p>Hola,</p>
+    <p>Te informamos que la contraseña de tu cuenta para el negocio <strong>${data.business_name}</strong> ha sido actualizada recientemente.</p>
+    <p>Si no has sido tú quien ha realizado este cambio, por favor, contacta con nuestro equipo de soporte inmediatamente.</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="mailto:info@pixelnova.es" style="background-color: #CF0D0E; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
+        Contactar a Soporte
+      </a>
+    </div>
+    <p style="margin-top: 20px;">Saludos cordiales,<br>El equipo de <strong>Pixelnova</strong></p>
+  `;
+
+  const mailOptions = {
+    from: SENDER_EMAIL,
+    to: data.to_email,
+    subject: `Notificación de seguridad: Contraseña actualizada para ${data.business_name}`,
+    html: emailWrapper(title, content),
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Error al enviar email de cambio de contraseña:', error);
+    throw error;
+  }
+};
+
+export const sendEmailChangedEmail = async (data: EmailChangedEmailData) => {
+  const title = "Notificación de Seguridad";
+  const content = `
+    <p>Hola,</p>
+    <p>Te informamos que el email de contacto para tu negocio <strong>${data.business_name}</strong> ha sido cambiado a <strong>${data.new_email}</strong>.</p>
+    <p>A partir de ahora, todas las notificaciones se enviarán a esta nueva dirección.</p>
+    <p>Si no has sido tú quien ha realizado este cambio, por favor, contacta con nuestro equipo de soporte inmediatamente.</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="mailto:info@pixelnova.es" style="background-color: #CF0D0E; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
+        Contactar a Soporte
+      </a>
+    </div>
+    <p style="margin-top: 20px;">Saludos cordiales,<br>El equipo de <strong>Pixelnova</strong></p>
+  `;
+
+  const mailOptions = {
+    from: SENDER_EMAIL,
+    to: data.to_email,
+    subject: `Notificación de seguridad: Email actualizado para ${data.business_name}`,
+    html: emailWrapper(title, content),
+  };
+
+  try {
+    // Send to the old email address
+    await transporter.sendMail(mailOptions);
+    // Also send a notification to the new email address
+    const newEmailOptions = { ...mailOptions, to: data.new_email };
+    await transporter.sendMail(newEmailOptions);
+  } catch (error) {
+    console.error('Error al enviar email de cambio de email:', error);
+    throw error;
+  }
+};
+
+export const sendBookingConfirmationEmail = async (data: BookingConfirmationEmailData) => {
+  const title = "¡Confirma tu Reserva!";
+  const content = `
+    <p>Hola <strong>${data.user_name}</strong>,</p>
+    <p>Gracias por solicitar una reserva en <strong>${data.business_name}</strong>. Por favor, confirma tu cita para el servicio:</p>
+    <p style="font-size: 18px; font-weight: bold; color: #333; text-align: center; margin: 20px 0;">${data.service_name}</p>
+    <p style="text-align: center;">El <strong>${data.booking_date}</strong> a las <strong>${data.booking_time}</strong></p>
+    <p>Para asegurar tu plaza, haz clic en el siguiente botón:</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${data.verification_link}" style="background-color: #CF0D0E; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
+        Confirmar mi Reserva
+      </a>
+    </div>
+    <p>Si no confirmas la reserva, esta se cancelará automáticamente. Si deseas cancelar, puedes hacerlo aquí: <a href="${data.cancellation_link}" style="color: #BE5B5D;">Cancelar</a>.</p>
+    <p style="margin-top: 20px;">Saludos cordiales,<br>El equipo de <strong>${data.business_name}</strong></p>
+  `;
+
+  const mailOptions = {
+    from: SENDER_EMAIL,
+    to: data.to_email,
+    subject: `Confirma tu reserva en ${data.business_name}`,
+    html: emailWrapper(title, content),
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Error al enviar email de confirmación de reserva con Nodemailer:', error);
+    throw error;
+  }
+};
+
+export const sendAdminNotificationEmail = async (data: AdminNotificationEmailData) => {
+  const title = "Nueva Solicitud de Reserva";
+  const content = `
+    <p>Hola,</p>
+    <p>Has recibido una nueva solicitud de reserva en <strong>${data.business_name}</strong>.</p>
+    <div style="border-top: 1px solid #eeeeee; margin: 20px 0;"></div>
+    <p><strong>Detalles de la reserva:</strong></p>
+    <ul style="list-style-type: none; padding-left: 0;">
+      <li style="padding-bottom: 10px;"><strong>Cliente:</strong> ${data.user_name}</li>
+      <li style="padding-bottom: 10px;"><strong>Servicio:</strong> ${data.service_name}</li>
+      <li style="padding-bottom: 10px;"><strong>Fecha:</strong> ${data.booking_date}</li>
+      <li style="padding-bottom: 10px;"><strong>Hora:</strong> ${data.booking_time}</li>
+    </ul>
+    <div style="border-top: 1px solid #eeeeee; margin: 20px 0;"></div>
+    <p>La reserva está pendiente de la confirmación del cliente.</p>
+    <p style="margin-top: 20px;">Saludos cordiales,<br>Tu sistema de reservas de <strong>Pixelnova</strong></p>
   `;
 
   const mailOptions = {
     from: SENDER_EMAIL,
     to: data.to_email,
     subject: `Nueva solicitud de reserva de ${data.user_name}`,
-    html: emailContent,
+    html: emailWrapper(title, content),
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email de notificación a admin enviado:', info.messageId);
-    return info;
+    await transporter.sendMail(mailOptions);
   } catch (error) {
     console.error('Error al enviar email de notificación a admin con Nodemailer:', error);
     throw error;
