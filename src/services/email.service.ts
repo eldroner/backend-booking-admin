@@ -124,7 +124,7 @@ export const sendCancellationEmail = async (data: CancellationEmailData) => {
   `;
 
   const mailOptions = {
-    from: SENDER_EMAIL,
+    from: `"Reservas Pixelnova" <${SENDER_EMAIL}>`,
     to: data.to_email,
     subject: `Reserva cancelada en ${data.business_name}`,
     html: emailWrapper(title, content),
@@ -163,7 +163,7 @@ export const sendWelcomeEmail = async (data: WelcomeEmailData) => {
   `;
 
   const mailOptions = {
-    from: SENDER_EMAIL,
+    from: `"Reservas Pixelnova" <${SENDER_EMAIL}>`,
     to: data.to_email,
     subject: '¡Bienvenido! Comienza a gestionar tus reservas',
     html: emailWrapper(title, content),
@@ -192,7 +192,7 @@ export const sendPasswordChangedEmail = async (data: PasswordChangedEmailData) =
   `;
 
   const mailOptions = {
-    from: SENDER_EMAIL,
+    from: `"Reservas Pixelnova" <${SENDER_EMAIL}>`,
     to: data.to_email,
     subject: `Notificación de seguridad: Contraseña actualizada para ${data.business_name}`,
     html: emailWrapper(title, content),
@@ -222,7 +222,7 @@ export const sendEmailChangedEmail = async (data: EmailChangedEmailData) => {
   `;
 
   const mailOptions = {
-    from: SENDER_EMAIL,
+    from: `"Reservas Pixelnova" <${SENDER_EMAIL}>`,
     to: data.to_email,
     subject: `Notificación de seguridad: Email actualizado para ${data.business_name}`,
     html: emailWrapper(title, content),
@@ -258,7 +258,7 @@ export const sendBookingConfirmationEmail = async (data: BookingConfirmationEmai
   `;
 
   const mailOptions = {
-    from: SENDER_EMAIL,
+    from: `"Reservas Pixelnova" <${SENDER_EMAIL}>`,
     to: data.to_email,
     subject: `Confirma tu reserva en ${data.business_name}`,
     html: emailWrapper(title, content),
@@ -291,7 +291,7 @@ export const sendAdminNotificationEmail = async (data: AdminNotificationEmailDat
   `;
 
   const mailOptions = {
-    from: SENDER_EMAIL,
+    from: `"Reservas Pixelnova" <${SENDER_EMAIL}>`,
     to: data.to_email,
     subject: `Nueva solicitud de reserva de ${data.user_name}`,
     html: emailWrapper(title, content),
