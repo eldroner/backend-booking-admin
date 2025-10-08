@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import { AllowedBusinessModel } from '../models/allowed-business.model';
+import { BusinessConfigModel } from '../models/config.model';
+import { ReservaModel } from '../models/reserva.model';
+import { sendWelcomeEmail } from '../services/email.service';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
@@ -42,18 +45,48 @@ export const createBusiness = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'idNegocio y emailContacto son requeridos.' });
     }
 
-    const existingBusiness = await AllowedBusinessModel.findOne({ $or: [{ idNegocio }, { emailContacto }] });
-    if (existingBusiness) {
-      return res.status(409).json({ message: 'Ya existe un negocio con ese idNegocio o emailContacto.' });
+    // Comprobar duplicados en AMBAS colecciones
+    const existingAllowed = await AllowedBusinessModel.findOne({ idNegocio });
+    const existingConfig = await BusinessConfigModel.findOne({ idNegocio });
+
+    if (existingAllowed || existingConfig) {
+      return res.status(409).json({ message: `El ID de negocio '${idNegocio}' ya está en uso.` });
     }
 
+    // 1. Crear el negocio permitido
     const newBusiness = new AllowedBusinessModel({
       idNegocio,
       emailContacto,
-      estado: 'activo' // Lo creamos como activo directamente
+      estado: 'activo',
+      subscriptionStatus: 'active',
+      cancelAtPeriodEnd: false,
+    });
+
+    // 2. Crear la configuración por defecto
+    const defaultConfig = new BusinessConfigModel({
+      idNegocio: idNegocio,
+      nombre: idNegocio,
+      slogan: 'Tu eslogan personalizado aquí',
+      duracionBase: 30,
+      maxReservasPorSlot: 1,
+      servicios: [
+        { id: 'servicio-1', nombre: 'Servicio 1', duracion: 30 },
+        { id: 'servicio-2', nombre: 'Servicio 2', duracion: 60 },
+      ],
+      horariosNormales: [
+        { dia: 1, tramos: [{ horaInicio: '09:00', horaFin: '13:00' }] }, // Lunes
+        { dia: 2, tramos: [{ horaInicio: '09:00', horaFin: '13:00' }] }, // Martes
+        { dia: 3, tramos: [{ horaInicio: '09:00', horaFin: '13:00' }] }, // Miércoles
+        { dia: 4, tramos: [{ horaInicio: '09:00', horaFin: '13:00' }] }, // Jueves
+        { dia: 5, tramos: [{ horaInicio: '09:00', horaFin: '13:00' }] }, // Viernes
+      ],
     });
 
     await newBusiness.save();
+    await defaultConfig.save();
+
+    // 3. Enviar email de bienvenida
+    await sendWelcomeEmail({ to_email: emailContacto, business_id: idNegocio });
 
     res.status(201).json(newBusiness);
 
@@ -76,19 +109,24 @@ export const getAllBusinesses = async (req: Request, res: Response) => {
 export const deleteBusiness = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const deletedBusiness = await AllowedBusinessModel.findByIdAndDelete(id);
 
-    if (!deletedBusiness) {
+    // Find the business first to get its idNegocio
+    const businessToDelete = await AllowedBusinessModel.findById(id);
+    if (!businessToDelete) {
       return res.status(404).json({ message: 'Negocio no encontrado.' });
     }
+    const { idNegocio } = businessToDelete;
 
-    // Opcional: Eliminar también la configuración del negocio en BusinessConfigModel
-    // await BusinessConfigModel.deleteOne({ idNegocio: deletedBusiness.idNegocio });
+    // Perform all deletions
+    await AllowedBusinessModel.findByIdAndDelete(id);
+    await BusinessConfigModel.deleteOne({ idNegocio: idNegocio });
+    await ReservaModel.deleteMany({ idNegocio: idNegocio });
 
-    res.status(200).json({ message: `Negocio ${deletedBusiness.idNegocio} eliminado correctamente.` });
+    res.status(200).json({ message: `Negocio ${idNegocio} y todos sus datos asociados han sido eliminados.` });
+
   } catch (error) {
     console.error('Error en deleteBusiness:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    res.status(500).json({ message: 'Error interno del servidor durante la eliminación.' });
   }
 };
 
