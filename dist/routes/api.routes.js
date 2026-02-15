@@ -42,6 +42,7 @@ const reservas_controller_1 = require("../controllers/reservas.controller");
 const bloqueo_controller_1 = require("../controllers/bloqueo.controller");
 const servicios_controller_1 = require("../controllers/servicios.controller");
 const payment_controller_1 = require("../controllers/payment.controller");
+const email_controller_1 = require("../controllers/email.controller"); // Importar el nuevo controlador de email
 const auth_controller_1 = require("../controllers/auth.controller"); // Importar el nuevo controlador
 const business_controller_1 = require("../controllers/business.controller"); // Importar el nuevo controlador de negocio
 const auth_middleware_1 = require("../middleware/auth.middleware"); // Importar el middleware de autenticación
@@ -70,6 +71,9 @@ router.get('/payments/session-status', payment_controller_1.getCheckoutSessionSt
 router.post('/subscription/cancel', auth_middleware_1.authenticateAdmin, payment_controller_1.cancelSubscription);
 router.post('/subscription/revert-cancellation', auth_middleware_1.authenticateAdmin, payment_controller_1.revertSubscriptionCancellation);
 router.get('/subscription/details', auth_middleware_1.authenticateAdmin, payment_controller_1.getSubscriptionDetails);
+// --- Email Routes ---
+router.post('/email/send-booking-confirmation', email_controller_1.sendBookingConfirmation);
+router.post('/email/send-admin-notification', email_controller_1.sendAdminNotification);
 // Rutas de subida de imágenes
 router.post('/upload/image', auth_middleware_1.authenticateAdmin, upload.single('image'), upload_controller_1.uploadImage);
 router.post('/upload/images', auth_middleware_1.authenticateAdmin, upload.array('images', 10), upload_controller_1.uploadImages);
