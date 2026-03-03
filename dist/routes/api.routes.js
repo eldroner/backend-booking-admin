@@ -77,8 +77,11 @@ router.post('/email/send-admin-notification', email_controller_1.sendAdminNotifi
 // Rutas de subida de imágenes
 router.post('/upload/image', auth_middleware_1.authenticateAdmin, upload.single('image'), upload_controller_1.uploadImage);
 router.post('/upload/images', auth_middleware_1.authenticateAdmin, upload.array('images', 10), upload_controller_1.uploadImages);
-// Servicios (públicos)
+// Servicios
 router.get('/servicios', servicios_controller_1.getServicios);
+router.post('/servicios', auth_middleware_1.authenticateAdmin, servicios_controller_1.addServicio);
+router.put('/servicios/:id', auth_middleware_1.authenticateAdmin, servicios_controller_1.updateServicio);
+router.delete('/servicios/:id', auth_middleware_1.authenticateAdmin, servicios_controller_1.deleteServicio);
 // Reservas (algunas protegidas)
 router.get('/reservas', reservas_controller_1.getReservas);
 router.post('/reservas', reservas_controller_1.createReserva);

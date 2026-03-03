@@ -49,7 +49,8 @@ mongoose.connect(MONGODB_URI, mongooseOptions)
 const allowedOrigins = [
   'http://localhost:4200',
   'http://127.0.0.1:4200',
-  'https://reservas.pixelnova.es'  // Añadido tu dominio real aquí
+  'https://reservas.pixelnova.es',
+  'https://www.reservas.pixelnova.es'
 ];
 
 app.use(cors({

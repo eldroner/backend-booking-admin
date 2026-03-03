@@ -4,6 +4,8 @@ export interface IServicio {
   id: string;
   nombre: string;
   duracion: number; // Duración en minutos
+  precio?: number;
+  categoria?: string;
 }
 
 export interface ITramoHorario {

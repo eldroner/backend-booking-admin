@@ -4,7 +4,9 @@ const mongoose_1 = require("mongoose");
 const servicioSchema = new mongoose_1.Schema({
     idNegocio: { type: String, required: false },
     nombre: { type: String, required: true },
-    duracion: { type: Number, required: true }
+    duracion: { type: Number, required: true },
+    precio: { type: Number, required: false, default: 0 },
+    categoria: { type: String, required: false }
 });
 // Índice compuesto para asegurar que el nombre del servicio es único por negocio
 servicioSchema.index({ idNegocio: 1, nombre: 1 }, { unique: true });

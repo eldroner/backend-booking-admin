@@ -12,7 +12,9 @@ const ConfigSchema = z.object({
   servicios: z.array(z.object({
     id: z.string().optional(),
     nombre: z.string().min(1),
-    duracion: z.number().min(5)
+    duracion: z.number().min(5),
+    precio: z.number().optional(),
+    categoria: z.string().optional()
   })),
   horariosNormales: z.array(z.object({
     dia: z.number().min(0).max(6),

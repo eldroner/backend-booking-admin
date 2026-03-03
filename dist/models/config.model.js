@@ -56,7 +56,9 @@ const BusinessConfigSchema = new mongoose_1.Schema({
     servicios: [{
             id: { type: String, required: true },
             nombre: { type: String, required: true },
-            duracion: { type: Number, required: true, min: 5 }
+            duracion: { type: Number, required: true, min: 5 },
+            precio: { type: Number },
+            categoria: { type: String }
         }],
     horariosNormales: [{
             dia: {

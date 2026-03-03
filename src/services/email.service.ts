@@ -44,6 +44,7 @@ interface BookingConfirmationEmailData {
   cancellation_link: string;
   business_name: string;
   service_name: string;
+  service_price?: number; // Añadido
   booking_date: string;
   booking_time: string;
 }
@@ -53,6 +54,7 @@ interface AdminNotificationEmailData {
   user_name: string;
   business_name: string;
   service_name: string;
+  service_price?: number; // Añadido
   booking_date: string;
   booking_time: string;
 }
@@ -245,7 +247,7 @@ export const sendBookingConfirmationEmail = async (data: BookingConfirmationEmai
   const content = `
     <p>Hola <strong>${data.user_name}</strong>,</p>
     <p>Gracias por solicitar una reserva en <strong>${data.business_name}</strong>. Por favor, confirma tu cita para el servicio:</p>
-    <p style="font-size: 18px; font-weight: bold; color: #333; text-align: center; margin: 20px 0;">${data.service_name}</p>
+    <p style="font-size: 18px; font-weight: bold; color: #333; text-align: center; margin: 20px 0;">${data.service_name}${data.service_price && data.service_price > 0 ? ` - ${data.service_price}€` : ''}</p>
     <p style="text-align: center;">El <strong>${data.booking_date}</strong> a las <strong>${data.booking_time}</strong></p>
     <p>Para asegurar tu plaza, haz clic en el siguiente botón:</p>
     <div style="text-align: center; margin: 30px 0;">
@@ -282,6 +284,7 @@ export const sendAdminNotificationEmail = async (data: AdminNotificationEmailDat
     <ul style="list-style-type: none; padding-left: 0;">
       <li style="padding-bottom: 10px;"><strong>Cliente:</strong> ${data.user_name}</li>
       <li style="padding-bottom: 10px;"><strong>Servicio:</strong> ${data.service_name}</li>
+      ${data.service_price && data.service_price > 0 ? `<li style="padding-bottom: 10px;"><strong>Importe:</strong> ${data.service_price}€</li>` : ''}
       <li style="padding-bottom: 10px;"><strong>Fecha:</strong> ${data.booking_date}</li>
       <li style="padding-bottom: 10px;"><strong>Hora:</strong> ${data.booking_time}</li>
     </ul>

@@ -2,7 +2,7 @@ import express from 'express';
 import { getConfig, updateConfig, getGoogleMapsApiKey, getGoogleMapsMapId } from '../controllers/config.controller';
 import { getReservas, createReserva, deleteReserva, confirmarReserva, confirmarReservaDefinitiva, addReservaAdmin, confirmarReservaAdmin, cancelarReserva, cancelarReservaPorToken } from '../controllers/reservas.controller';
 import { deleteFechaBloqueada, getFechasBloqueadas, addFechaBloqueada } from '../controllers/bloqueo.controller';
-import { getServicios } from '../controllers/servicios.controller';
+import { getServicios, addServicio, updateServicio, deleteServicio } from '../controllers/servicios.controller';
 import { createCheckoutSession, getCheckoutSessionStatus, cancelSubscription, getSubscriptionDetails, revertSubscriptionCancellation } from '../controllers/payment.controller';
 import { sendBookingConfirmation, sendAdminNotification } from '../controllers/email.controller'; // Importar el nuevo controlador de email
 import { loginByEmail } from '../controllers/auth.controller'; // Importar el nuevo controlador
@@ -49,8 +49,11 @@ router.post('/email/send-admin-notification', sendAdminNotification);
 router.post('/upload/image', authenticateAdmin, upload.single('image'), uploadImage);
 router.post('/upload/images', authenticateAdmin, upload.array('images', 10), uploadImages);
 
-// Servicios (públicos)
+// Servicios
 router.get('/servicios', getServicios);
+router.post('/servicios', authenticateAdmin, addServicio);
+router.put('/servicios/:id', authenticateAdmin, updateServicio);
+router.delete('/servicios/:id', authenticateAdmin, deleteServicio);
 
 // Reservas (algunas protegidas)
 router.get('/reservas', getReservas);

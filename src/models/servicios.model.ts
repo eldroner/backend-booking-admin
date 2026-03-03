@@ -5,12 +5,16 @@ export interface IServicio extends Document {
   idNegocio?: string;
   nombre: string;
   duracion: number;
+  precio?: number;
+  categoria?: string;
 }
 
 const servicioSchema = new Schema<IServicio>({
   idNegocio: { type: String, required: false },
   nombre: { type: String, required: true },
-  duracion: { type: Number, required: true }
+  duracion: { type: Number, required: true },
+  precio: { type: Number, required: false, default: 0 },
+  categoria: { type: String, required: false }
 });
 
 // Índice compuesto para asegurar que el nombre del servicio es único por negocio

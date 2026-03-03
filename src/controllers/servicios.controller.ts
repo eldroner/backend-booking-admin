@@ -17,10 +17,35 @@ export const getServicios = async (req: Request, res: Response) => {
 // Crear un nuevo servicio
 export const addServicio = async (req: Request, res: Response) => {
   try {
-    const { nombre, duracion, idNegocio } = req.body;
-    const newServicio = new Servicio({ nombre, duracion, ...(idNegocio && { idNegocio }) });
+    const { nombre, duracion, precio, categoria, idNegocio } = req.body;
+    const newServicio = new Servicio({ 
+      nombre, 
+      duracion, 
+      precio, 
+      categoria,
+      ...(idNegocio && { idNegocio }) 
+    });
     await newServicio.save();
     res.status(201).json(newServicio);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
+// Actualizar un servicio
+export const updateServicio = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { nombre, duracion, precio, categoria } = req.body;
+    const updatedServicio = await Servicio.findByIdAndUpdate(
+      id,
+      { nombre, duracion, precio, categoria },
+      { new: true }
+    );
+    if (!updatedServicio) {
+      return res.status(404).send('Servicio no encontrado');
+    }
+    res.json(updatedServicio);
   } catch (error) {
     res.status(500).send(error);
   }
