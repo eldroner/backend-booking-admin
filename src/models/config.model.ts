@@ -76,7 +76,9 @@ const BusinessConfigSchema = new Schema<IBusinessConfig>({
   }],
   direccion: { type: String },
   descripcion: { type: String },
-  fotoUrls: [{ type: String }]
+  fotoUrls: [{ type: String }],
+  googlePlaceId: { type: String },
+  googleCustomLogo: { type: String }
 }, { timestamps: true });
 
 // Índice único para asegurar solo un documento de configuración por negocio

@@ -33,6 +33,8 @@ const ConfigSchema = z.object({
   descripcion: z.string().optional(),
   fotoUrls: z.array(z.string().url()).optional(),
   telefono: z.string().optional(),
+  googlePlaceId: z.string().optional(),
+  googleCustomLogo: z.string().optional(),
 });
 
 export const getConfig = async (req: Request, res: Response) => {

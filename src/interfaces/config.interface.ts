@@ -38,4 +38,6 @@ export interface IBusinessConfig extends Document {
   direccion?: string;
   descripcion?: string;
   fotoUrls?: string[];
+  googlePlaceId?: string;
+  googleCustomLogo?: string;
 }
