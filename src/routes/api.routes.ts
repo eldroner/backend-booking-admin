@@ -14,6 +14,9 @@ import { superAdminAuth } from '../middleware/super-admin-auth.middleware';
 import { uploadImage, uploadImages } from '../controllers/upload.controller';
 import multer = require('multer');
 
+import { getStaff, addStaff, updateStaff, deleteStaff } from '../controllers/staff.controller';
+import { submitRating, getRatingInfo } from '../controllers/rating.controller';
+
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
@@ -54,6 +57,16 @@ router.get('/servicios', getServicios);
 router.post('/servicios', authenticateAdmin, addServicio);
 router.put('/servicios/:id', authenticateAdmin, updateServicio);
 router.delete('/servicios/:id', authenticateAdmin, deleteServicio);
+
+// Personal (Equipo)
+router.get('/staff', getStaff);
+router.post('/staff', authenticateAdmin, addStaff);
+router.put('/staff/:id', authenticateAdmin, updateStaff);
+router.delete('/staff/:id', authenticateAdmin, deleteStaff);
+
+// Valoraciones
+router.get('/rating/info/:token', getRatingInfo);
+router.post('/rating/submit/:token', submitRating);
 
 // Reservas (algunas protegidas)
 router.get('/reservas', getReservas);

@@ -21,6 +21,7 @@ interface ReservaRequestBody {
   servicio: string;
   estado?: string;
   duracion?: number;
+  staffId?: string; // Nuevo campo
 }
 
 interface ReservaResponse {
@@ -109,6 +110,7 @@ export const createReserva = async (
     }
 
     const cancellationToken = crypto.randomBytes(32).toString('hex');
+    const ratingToken = crypto.randomBytes(32).toString('hex'); // Token para valoración
 
     // Obtener el email de contacto del negocio
     const negocioPermitido = await AllowedBusinessModel.findOne({ idNegocio: idNegocio as string });
@@ -131,9 +133,11 @@ export const createReserva = async (
     }
 
     // Crear objeto de reserva
+    const reservaId = uuidv4();
     const reservaData: any = {
-      _id: uuidv4(),
+      _id: reservaId,
       idNegocio: idNegocio,
+      staffId: reservaBody.staffId,
       usuario: {
         nombre: reservaBody.usuario.nombre.trim(),
         email: reservaBody.usuario.email.trim().toLowerCase(),
@@ -145,6 +149,7 @@ export const createReserva = async (
       estado: 'pendiente_email',
       confirmacionToken,
       cancellation_token: cancellationToken,
+      ratingToken, // Guardar el token de valoración
       duracion: reservaBody.duracion || 30,
       expiresAt: new Date(Date.now() + 30 * 60 * 1000) // 30 minutos
     };
@@ -202,12 +207,15 @@ export const addReservaAdmin = async (req: Request, res: Response) => {
         }
 
         const uniqueToken = `admin-generated-${crypto.randomBytes(8).toString('hex')}`;
+        const ratingToken = crypto.randomBytes(32).toString('hex');
+
         const reserva = new ReservaModel({
             _id: uuidv4(),
             ...reservaData,
             precioFinal: reservaData.precioFinal !== undefined ? reservaData.precioFinal : precioBase,
             ...(idNegocio && { idNegocio }),
             confirmacionToken: uniqueToken,
+            ratingToken,
             estado: 'confirmada'
         });
         await reserva.save();
@@ -544,7 +552,7 @@ export const getStatistics = async (req: Request, res: Response) => {
 
 export const checkDisponibilidad = async (req: Request, res: Response) => {
   try {
-    const { idNegocio, fecha, hora, duracion } = req.query;
+    const { idNegocio, fecha, hora, duracion, staffId } = req.query;
 
     if (!idNegocio || !fecha || !hora || !duracion) {
       return res.status(400).json({ error: 'Faltan parámetros requeridos' });
@@ -577,7 +585,7 @@ export const checkDisponibilidad = async (req: Request, res: Response) => {
     }
 
     // 2. Buscar solapamientos
-    const overlappingReservas = await ReservaModel.countDocuments({
+    const query: any = {
       idNegocio: idNegocio as string,
       estado: { $in: ['confirmada', 'pendiente_email'] },
       $or: [
@@ -585,7 +593,6 @@ export const checkDisponibilidad = async (req: Request, res: Response) => {
         { 
           fechaInicio: { $lt: fechaFin }, 
           fechaFin: { $exists: false },
-          // Si no tiene fechaFin, asumimos que dura 'duracion' (o lo que tenga guardado)
           $expr: {
             $gt: [
               { $add: ["$fechaInicio", { $multiply: ["$duracion", 60000] }] },
@@ -594,10 +601,20 @@ export const checkDisponibilidad = async (req: Request, res: Response) => {
           }
         }
       ]
-    });
+    };
 
-    if (overlappingReservas >= config.maxReservasPorSlot) {
-      return res.json(false);
+    if (staffId) {
+      query.staffId = staffId as string;
+      const isStaffBusy = await ReservaModel.exists(query);
+      if (isStaffBusy) {
+        return res.json(false);
+      }
+    } else {
+      // Si no hay staffId, comprobamos si se ha llegado al máximo global
+      const overlappingReservas = await ReservaModel.countDocuments(query);
+      if (overlappingReservas >= config.maxReservasPorSlot) {
+        return res.json(false);
+      }
     }
 
     return res.json(true);

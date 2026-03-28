@@ -59,6 +59,14 @@ interface AdminNotificationEmailData {
   booking_time: string;
 }
 
+interface RatingRequestEmailData {
+  to_email: string;
+  user_name: string;
+  staff_name: string;
+  business_name: string;
+  rating_link: string;
+}
+
 
 // --- TRANSPORTER ---
 const transporter = nodemailer.createTransport({
@@ -306,4 +314,34 @@ export const sendAdminNotificationEmail = async (data: AdminNotificationEmailDat
     console.error('Error al enviar email de notificación a admin con Nodemailer:', error);
     throw error;
   }
-};
+  };
+
+  export const sendRatingRequestEmail = async (data: RatingRequestEmailData) => {
+  const title = "¿Cómo fue tu experiencia?";
+  const content = `
+    <p>Hola <strong>${data.user_name}</strong>,</p>
+    <p>Esperamos que hayas disfrutado de tu visita a <strong>${data.business_name}</strong>.</p>
+    <p>¿Podrías dedicarnos 1 minuto para valorar la atención recibida por <strong>${data.staff_name}</strong>?</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${data.rating_link}" style="background-color: #CF0D0E; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
+        Valorar mi Experiencia
+      </a>
+    </div>
+    <p>Tu opinión es muy importante para nosotros y para ayudar a otros clientes.</p>
+    <p style="margin-top: 20px;">Saludos cordiales,<br>El equipo de <strong>${data.business_name}</strong></p>
+  `;
+
+  const mailOptions = {
+    from: `"Reservas Pixelnova" <${SENDER_EMAIL}>`,
+    to: data.to_email,
+    subject: `¿Qué tal estuvo tu cita en ${data.business_name}?`,
+    html: emailWrapper(title, content),
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Error al enviar email de solicitud de valoración:', error);
+    throw error;
+  }
+  };

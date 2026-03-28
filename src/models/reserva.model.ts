@@ -14,6 +14,10 @@ export interface IReserva extends Document {
   servicio: string;
   estado: string;
   confirmacionToken: string;
+  ratingToken?: string; // Token para valorar después del servicio
+  ratingSubmitted?: boolean; // Si ya se ha valorado
+  ratingRequestSent?: boolean; // Si ya se ha enviado el email de valoración
+  staffId?: string; // ID del miembro del equipo (opcional, null = cualquiera)
   duracion?: number; // Añade esta línea
   precioFinal?: number; // Nueva propiedad para la facturación real
   notas?: string;
@@ -25,6 +29,10 @@ export interface IReserva extends Document {
 const reservaSchema = new Schema<IReserva>({
   _id: { type: String, required: true },
   idNegocio: { type: String, required: false },
+  staffId: { type: String, required: false, index: true },
+  ratingToken: { type: String, sparse: true, index: true },
+  ratingSubmitted: { type: Boolean, default: false },
+  ratingRequestSent: { type: Boolean, default: false },
   usuario: {
     nombre: { 
       type: String, 
