@@ -6,6 +6,11 @@ export interface IServicio {
   duracion: number; // Duración en minutos
   precio?: number;
   categoria?: string;
+  esPrecioDesde?: boolean;
+  enOferta?: boolean;
+  precioOferta?: number;
+  fechaFinOferta?: string; // YYYY-MM-DD
+  notaPrecio?: string; // Nota explicativa para precios variables
 }
 
 export interface ITramoHorario {
@@ -32,6 +37,8 @@ export interface IBusinessConfig extends Document {
   telefono?: string;
   duracionBase: number; // Duración base de los slots en minutos
   maxReservasPorSlot: number; // Máximo de reservas permitidas por slot
+  antelacionMinimaHoras?: number; // Nueva propiedad
+  provincia?: string; // Código de provincia (ej: O, M, B) para festivos
   servicios: IServicio[];
   horariosNormales: IHorarioNormal[];
   horariosEspeciales: IHorarioEspecial[];
@@ -40,4 +47,11 @@ export interface IBusinessConfig extends Document {
   fotoUrls?: string[];
   googlePlaceId?: string;
   googleCustomLogo?: string;
+  // --- Datos Fiscales ---
+  cif?: string;
+  razonSocial?: string;
+  direccionFiscal?: string;
+  codigoPostal?: string;
+  ciudad?: string;
+  porcentajeIva?: number;
 }

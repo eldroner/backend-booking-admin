@@ -9,12 +9,19 @@ const ConfigSchema = z.object({
   slogan: z.string().max(150).optional(),
   duracionBase: z.number().min(5),
   maxReservasPorSlot: z.number().min(1),
+  antelacionMinimaHoras: z.coerce.number().min(0).optional().default(0),
+  provincia: z.string().optional(),
   servicios: z.array(z.object({
     id: z.string().optional(),
     nombre: z.string().min(1),
     duracion: z.number().min(5),
     precio: z.number().optional(),
-    categoria: z.string().optional()
+    categoria: z.string().optional(),
+    esPrecioDesde: z.boolean().optional().default(false),
+    enOferta: z.boolean().optional().default(false),
+    precioOferta: z.number().optional(),
+    fechaFinOferta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
+    notaPrecio: z.string().max(200).optional()
   })),
   horariosNormales: z.array(z.object({
     dia: z.number().min(0).max(6),
@@ -35,6 +42,13 @@ const ConfigSchema = z.object({
   telefono: z.string().optional(),
   googlePlaceId: z.string().optional(),
   googleCustomLogo: z.string().optional(),
+  // --- Datos Fiscales ---
+  cif: z.string().optional(),
+  razonSocial: z.string().optional(),
+  direccionFiscal: z.string().optional(),
+  codigoPostal: z.string().optional(),
+  ciudad: z.string().optional(),
+  porcentajeIva: z.number().min(0).max(100).optional().default(0),
 });
 
 export const getConfig = async (req: Request, res: Response) => {
@@ -100,6 +114,8 @@ export const updateConfig = async (req: Request, res: Response) => {
     }
 
     const data = req.body;
+    console.log('Recibiendo actualización de configuración:', JSON.stringify(data, null, 2));
+    
     if (data.servicios && Array.isArray(data.servicios)) {
       data.servicios.forEach((servicio: any) => {
         if (!servicio.id) {

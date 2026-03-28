@@ -15,6 +15,7 @@ export interface IReserva extends Document {
   estado: string;
   confirmacionToken: string;
   duracion?: number; // Añade esta línea
+  precioFinal?: number; // Nueva propiedad para la facturación real
   notas?: string;
   expiresAt?: Date;
   createdAt: Date;
@@ -80,6 +81,10 @@ const reservaSchema = new Schema<IReserva>({
     type: String, 
     required: true,
     trim: true
+  },
+  precioFinal: {
+    type: Number,
+    min: [0, 'El precio no puede ser negativo']
   },
   estado: { 
     type: String, 

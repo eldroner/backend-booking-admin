@@ -63,6 +63,10 @@ const reservaSchema = new mongoose_1.Schema({
         required: true,
         trim: true
     },
+    precioFinal: {
+        type: Number,
+        min: [0, 'El precio no puede ser negativo']
+    },
     estado: {
         type: String,
         enum: ['pendiente', 'pendiente_email', 'confirmada', 'cancelada'],

@@ -84,8 +84,12 @@ router.put('/servicios/:id', auth_middleware_1.authenticateAdmin, servicios_cont
 router.delete('/servicios/:id', auth_middleware_1.authenticateAdmin, servicios_controller_1.deleteServicio);
 // Reservas (algunas protegidas)
 router.get('/reservas', reservas_controller_1.getReservas);
+router.get('/reservas/statistics', auth_middleware_1.authenticateAdmin, reservas_controller_1.getStatistics);
+router.get('/disponibilidad', reservas_controller_1.checkDisponibilidad);
+router.get('/holidays', reservas_controller_1.getHolidays);
 router.post('/reservas', reservas_controller_1.createReserva);
 router.post('/reservas/admin', auth_middleware_1.authenticateAdmin, reservas_controller_1.addReservaAdmin);
+router.put('/reservas/:id', auth_middleware_1.authenticateAdmin, reservas_controller_1.updateReserva);
 router.delete('/reservas/:id', reservas_controller_1.deleteReserva);
 router.get('/reservas/confirmar/:token', reservas_controller_1.confirmarReserva);
 router.post('/reservas/confirmar-definitiva/:token', reservas_controller_1.confirmarReservaDefinitiva);

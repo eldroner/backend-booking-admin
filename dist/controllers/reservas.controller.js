@@ -3,12 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cancelarReservaPorToken = exports.cancelarReserva = exports.deleteReserva = exports.confirmarReserva = exports.getReservas = exports.confirmarReservaAdmin = exports.confirmarReservaDefinitiva = exports.addReservaAdmin = exports.createReserva = void 0;
+exports.getHolidays = exports.checkDisponibilidad = exports.getStatistics = exports.updateReserva = exports.cancelarReservaPorToken = exports.cancelarReserva = exports.deleteReserva = exports.confirmarReserva = exports.getReservas = exports.confirmarReservaAdmin = exports.confirmarReservaDefinitiva = exports.addReservaAdmin = exports.createReserva = void 0;
 const reserva_model_1 = require("../models/reserva.model");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const uuid_1 = require("uuid");
+const config_model_1 = require("../models/config.model");
 const allowed_business_model_1 = require("../models/allowed-business.model");
 const crypto_1 = __importDefault(require("crypto"));
+const holiday_service_1 = require("../services/holiday.service");
 const createReserva = async (req, res) => {
     try {
         const { idNegocio, ...reservaBody } = req.body;
@@ -36,6 +38,18 @@ const createReserva = async (req, res) => {
                 detalles: "La fecha de inicio no es válida"
             });
         }
+        // Validación de antelación mínima
+        const config = await config_model_1.BusinessConfigModel.findOne({ idNegocio });
+        if (config && config.antelacionMinimaHoras && config.antelacionMinimaHoras > 0) {
+            const minDate = new Date();
+            minDate.setHours(minDate.getHours() + config.antelacionMinimaHoras);
+            if (fechaInicio < minDate) {
+                return res.status(400).json({
+                    error: "Antelación insuficiente",
+                    detalles: `Debe reservar con al menos ${config.antelacionMinimaHoras} horas de antelación.`
+                });
+            }
+        }
         if (!process.env.JWT_SECRET) {
             throw new Error("JWT_SECRET no está configurado en las variables de entorno");
         }
@@ -53,6 +67,16 @@ const createReserva = async (req, res) => {
         if (!negocioPermitido) {
             return res.status(404).json({ error: 'Negocio no encontrado o no autorizado' });
         }
+        // Obtener precio base del servicio
+        let precioBase = 0;
+        if (config) {
+            // Buscar el servicio por ID o por Nombre (comparando como strings para evitar fallos de ObjectId)
+            const servicio = config.servicios.find(s => String(s.id) === String(reservaBody.servicio) ||
+                s.nombre === reservaBody.servicio);
+            if (servicio) {
+                precioBase = servicio.enOferta && servicio.precioOferta ? servicio.precioOferta : (servicio.precio || 0);
+            }
+        }
         // Crear objeto de reserva
         const reservaData = {
             _id: (0, uuid_1.v4)(),
@@ -64,6 +88,7 @@ const createReserva = async (req, res) => {
             },
             fechaInicio: fechaInicio,
             servicio: reservaBody.servicio,
+            precioFinal: precioBase, // Guardar el precio encontrado
             estado: 'pendiente_email',
             confirmacionToken,
             cancellation_token: cancellationToken,
@@ -109,10 +134,20 @@ exports.createReserva = createReserva;
 const addReservaAdmin = async (req, res) => {
     try {
         const { idNegocio, ...reservaData } = req.body;
+        // Obtener precio base del servicio
+        let precioBase = 0;
+        const config = await config_model_1.BusinessConfigModel.findOne({ idNegocio });
+        if (config) {
+            const servicio = config.servicios.find(s => s.id === reservaData.servicio);
+            if (servicio) {
+                precioBase = servicio.enOferta && servicio.precioOferta ? servicio.precioOferta : (servicio.precio || 0);
+            }
+        }
         const uniqueToken = `admin-generated-${crypto_1.default.randomBytes(8).toString('hex')}`;
         const reserva = new reserva_model_1.ReservaModel({
             _id: (0, uuid_1.v4)(),
             ...reservaData,
+            precioFinal: reservaData.precioFinal !== undefined ? reservaData.precioFinal : precioBase,
             ...(idNegocio && { idNegocio }),
             confirmacionToken: uniqueToken,
             estado: 'confirmada'
@@ -162,7 +197,7 @@ const confirmarReservaAdmin = async (req, res) => {
 exports.confirmarReservaAdmin = confirmarReservaAdmin;
 const getReservas = async (req, res) => {
     try {
-        const { fecha, estado, idNegocio } = req.query;
+        const { fecha, estado, idNegocio, startDate, endDate } = req.query;
         let query = {};
         if (idNegocio) {
             query.idNegocio = idNegocio;
@@ -176,21 +211,36 @@ const getReservas = async (req, res) => {
         else {
             query.estado = { $in: ['pendiente', 'pendiente_email', 'confirmada', 'cancelada'] };
         }
-        if (fecha) {
+        // Filtro por fecha única (retrocompatibilidad)
+        if (fecha && !startDate && !endDate) {
             if (isNaN(Date.parse(fecha))) {
                 return res.status(400).json({
                     error: "Formato de fecha inválido",
                     detalles: "Use formato YYYY-MM-DD"
                 });
             }
-            const startDate = new Date(fecha);
-            startDate.setHours(0, 0, 0, 0);
-            const endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + 1);
+            const sDate = new Date(fecha);
+            sDate.setHours(0, 0, 0, 0);
+            const eDate = new Date(sDate);
+            eDate.setDate(sDate.getDate() + 1);
             query.fechaInicio = {
-                $gte: startDate,
-                $lt: endDate
+                $gte: sDate,
+                $lt: eDate
             };
+        }
+        // Filtro por rango de fechas (nuevo)
+        else if (startDate || endDate) {
+            query.fechaInicio = {};
+            if (startDate) {
+                const sDate = new Date(startDate);
+                sDate.setHours(0, 0, 0, 0);
+                query.fechaInicio.$gte = sDate;
+            }
+            if (endDate) {
+                const eDate = new Date(endDate);
+                eDate.setHours(23, 59, 59, 999);
+                query.fechaInicio.$lte = eDate;
+            }
         }
         // Añade .select('+duracion') para asegurar que trae el campo aunque no esté en el schema
         const reservas = await reserva_model_1.ReservaModel.find(query)
@@ -210,7 +260,9 @@ const getReservas = async (req, res) => {
             servicio: reserva.servicio,
             estado: reserva.estado,
             confirmacionToken: reserva.confirmacionToken || '',
-            duracion: reserva.duracion || 30 // Valor por defecto seguro
+            duracion: reserva.duracion || 30, // Valor por defecto seguro
+            precioFinal: reserva.precioFinal,
+            notas: reserva.notas
         }));
         return res.json(response);
     }
@@ -323,3 +375,133 @@ const cancelarReservaPorToken = async (req, res) => {
     }
 };
 exports.cancelarReservaPorToken = cancelarReservaPorToken;
+const updateReserva = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updateData = req.body;
+        const reserva = await reserva_model_1.ReservaModel.findByIdAndUpdate(id, { $set: updateData }, { new: true });
+        if (!reserva) {
+            return res.status(404).json({ message: 'Reserva no encontrada' });
+        }
+        res.json(reserva);
+    }
+    catch (error) {
+        console.error('Error al actualizar reserva:', error);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
+exports.updateReserva = updateReserva;
+const getStatistics = async (req, res) => {
+    try {
+        const { idNegocio, fechaInicio, fechaFin } = req.query;
+        if (!idNegocio) {
+            return res.status(400).json({ message: 'El idNegocio es requerido' });
+        }
+        let query = {
+            idNegocio: idNegocio,
+            estado: 'confirmada'
+        };
+        if (fechaInicio || fechaFin) {
+            query.fechaInicio = {};
+            if (fechaInicio) {
+                query.fechaInicio.$gte = new Date(fechaInicio);
+            }
+            if (fechaFin) {
+                query.fechaInicio.$lte = new Date(fechaFin);
+            }
+        }
+        const reservas = await reserva_model_1.ReservaModel.find(query);
+        const totalFacturado = reservas.reduce((acc, curr) => acc + (curr.precioFinal || 0), 0);
+        const totalReservas = reservas.length;
+        res.json({
+            totalFacturado,
+            totalReservas,
+            count: reservas.length
+        });
+    }
+    catch (error) {
+        console.error('Error al obtener estadísticas:', error);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
+exports.getStatistics = getStatistics;
+const checkDisponibilidad = async (req, res) => {
+    try {
+        const { idNegocio, fecha, hora, duracion } = req.query;
+        if (!idNegocio || !fecha || !hora || !duracion) {
+            return res.status(400).json({ error: 'Faltan parámetros requeridos' });
+        }
+        const config = await config_model_1.BusinessConfigModel.findOne({ idNegocio: idNegocio });
+        if (!config) {
+            return res.status(404).json({ error: 'Configuración no encontrada' });
+        }
+        const fechaInicio = new Date(`${fecha}T${hora}:00`);
+        const fechaFin = new Date(fechaInicio.getTime() + Number(duracion) * 60000);
+        // 1. Validar festivos (con prioridad para horarios especiales)
+        const hasSpecialSchedule = config.horariosEspeciales?.some(h => h.fecha === fecha && h.activo);
+        if (!hasSpecialSchedule) {
+            const isHoliday = await holiday_service_1.holidayService.isHoliday(fecha, config.provincia);
+            if (isHoliday) {
+                return res.json(false);
+            }
+        }
+        // 2. Validar antelación mínima
+        if (config.antelacionMinimaHoras && config.antelacionMinimaHoras > 0) {
+            const minDate = new Date();
+            minDate.setHours(minDate.getHours() + config.antelacionMinimaHoras);
+            if (fechaInicio < minDate) {
+                return res.json(false);
+            }
+        }
+        // 2. Buscar solapamientos
+        const overlappingReservas = await reserva_model_1.ReservaModel.countDocuments({
+            idNegocio: idNegocio,
+            estado: { $in: ['confirmada', 'pendiente_email'] },
+            $or: [
+                { fechaInicio: { $lt: fechaFin }, fechaFin: { $gt: fechaInicio } },
+                {
+                    fechaInicio: { $lt: fechaFin },
+                    fechaFin: { $exists: false },
+                    // Si no tiene fechaFin, asumimos que dura 'duracion' (o lo que tenga guardado)
+                    $expr: {
+                        $gt: [
+                            { $add: ["$fechaInicio", { $multiply: ["$duracion", 60000] }] },
+                            fechaInicio
+                        ]
+                    }
+                }
+            ]
+        });
+        if (overlappingReservas >= config.maxReservasPorSlot) {
+            return res.json(false);
+        }
+        return res.json(true);
+    }
+    catch (error) {
+        console.error('Error en checkDisponibilidad:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+};
+exports.checkDisponibilidad = checkDisponibilidad;
+const getHolidays = async (req, res) => {
+    try {
+        const { year, provincia } = req.query;
+        if (!year)
+            return res.status(400).json({ error: 'El año es requerido' });
+        const holidays = await holiday_service_1.holidayService.getHolidays(Number(year));
+        // Filtrar por provincia si se proporciona
+        const filteredHolidays = holidays.filter(h => {
+            if (h.global || h.counties === null)
+                return true;
+            if (provincia && h.counties.includes(`ES-${provincia}`))
+                return true;
+            return false;
+        });
+        res.json(filteredHolidays);
+    }
+    catch (error) {
+        console.error('Error al obtener festivos:', error);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
+exports.getHolidays = getHolidays;

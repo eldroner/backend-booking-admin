@@ -20,12 +20,27 @@ const BusinessConfigSchema = new Schema<IBusinessConfig>({
     required: true,
     min: [1, 'Debe permitir al menos 1 reserva por slot'] 
   },
+  antelacionMinimaHoras: {
+    type: Number,
+    default: 0,
+    min: [0, 'La antelación mínima no puede ser negativa']
+  },
+  provincia: {
+    type: String,
+    uppercase: true,
+    trim: true
+  },
   servicios: [{
     id: { type: String, required: true },
     nombre: { type: String, required: true },
     duracion: { type: Number, required: true, min: 5 },
     precio: { type: Number },
-    categoria: { type: String }
+    categoria: { type: String },
+    esPrecioDesde: { type: Boolean, default: false },
+    enOferta: { type: Boolean, default: false },
+    precioOferta: { type: Number },
+    fechaFinOferta: { type: String },
+    notaPrecio: { type: String, maxlength: 200 }
   }],
   horariosNormales: [{
     dia: { 
@@ -78,7 +93,14 @@ const BusinessConfigSchema = new Schema<IBusinessConfig>({
   descripcion: { type: String },
   fotoUrls: [{ type: String }],
   googlePlaceId: { type: String },
-  googleCustomLogo: { type: String }
+  googleCustomLogo: { type: String },
+  // --- Datos Fiscales ---
+  cif: { type: String, trim: true },
+  razonSocial: { type: String, trim: true },
+  direccionFiscal: { type: String, trim: true },
+  codigoPostal: { type: String, trim: true },
+  ciudad: { type: String, trim: true },
+  porcentajeIva: { type: Number, default: 0, min: 0, max: 100 }
 }, { timestamps: true });
 
 // Índice único para asegurar solo un documento de configuración por negocio

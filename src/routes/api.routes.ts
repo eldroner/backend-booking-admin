@@ -1,6 +1,6 @@
 import express from 'express';
 import { getConfig, updateConfig, getGoogleMapsApiKey, getGoogleMapsMapId } from '../controllers/config.controller';
-import { getReservas, createReserva, deleteReserva, confirmarReserva, confirmarReservaDefinitiva, addReservaAdmin, confirmarReservaAdmin, cancelarReserva, cancelarReservaPorToken } from '../controllers/reservas.controller';
+import { getReservas, createReserva, deleteReserva, confirmarReserva, confirmarReservaDefinitiva, addReservaAdmin, confirmarReservaAdmin, cancelarReserva, cancelarReservaPorToken, updateReserva, getStatistics, checkDisponibilidad, getHolidays } from '../controllers/reservas.controller';
 import { deleteFechaBloqueada, getFechasBloqueadas, addFechaBloqueada } from '../controllers/bloqueo.controller';
 import { getServicios, addServicio, updateServicio, deleteServicio } from '../controllers/servicios.controller';
 import { createCheckoutSession, getCheckoutSessionStatus, cancelSubscription, getSubscriptionDetails, revertSubscriptionCancellation } from '../controllers/payment.controller';
@@ -57,9 +57,13 @@ router.delete('/servicios/:id', authenticateAdmin, deleteServicio);
 
 // Reservas (algunas protegidas)
 router.get('/reservas', getReservas);
+router.get('/reservas/statistics', authenticateAdmin, getStatistics);
+router.get('/disponibilidad', checkDisponibilidad);
+router.get('/holidays', getHolidays);
 router.post('/reservas', createReserva);
 router.post('/reservas/admin', authenticateAdmin, addReservaAdmin);
 
+router.put('/reservas/:id', authenticateAdmin, updateReserva);
 router.delete('/reservas/:id', deleteReserva);
 router.get('/reservas/confirmar/:token', confirmarReserva);
 router.post('/reservas/confirmar-definitiva/:token', confirmarReservaDefinitiva);

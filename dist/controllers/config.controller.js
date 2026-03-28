@@ -13,12 +13,19 @@ const ConfigSchema = zod_1.z.object({
     slogan: zod_1.z.string().max(150).optional(),
     duracionBase: zod_1.z.number().min(5),
     maxReservasPorSlot: zod_1.z.number().min(1),
+    antelacionMinimaHoras: zod_1.z.coerce.number().min(0).optional().default(0),
+    provincia: zod_1.z.string().optional(),
     servicios: zod_1.z.array(zod_1.z.object({
         id: zod_1.z.string().optional(),
         nombre: zod_1.z.string().min(1),
         duracion: zod_1.z.number().min(5),
         precio: zod_1.z.number().optional(),
-        categoria: zod_1.z.string().optional()
+        categoria: zod_1.z.string().optional(),
+        esPrecioDesde: zod_1.z.boolean().optional().default(false),
+        enOferta: zod_1.z.boolean().optional().default(false),
+        precioOferta: zod_1.z.number().optional(),
+        fechaFinOferta: zod_1.z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(zod_1.z.literal('')),
+        notaPrecio: zod_1.z.string().max(200).optional()
     })),
     horariosNormales: zod_1.z.array(zod_1.z.object({
         dia: zod_1.z.number().min(0).max(6),
@@ -39,6 +46,13 @@ const ConfigSchema = zod_1.z.object({
     telefono: zod_1.z.string().optional(),
     googlePlaceId: zod_1.z.string().optional(),
     googleCustomLogo: zod_1.z.string().optional(),
+    // --- Datos Fiscales ---
+    cif: zod_1.z.string().optional(),
+    razonSocial: zod_1.z.string().optional(),
+    direccionFiscal: zod_1.z.string().optional(),
+    codigoPostal: zod_1.z.string().optional(),
+    ciudad: zod_1.z.string().optional(),
+    porcentajeIva: zod_1.z.number().min(0).max(100).optional().default(0),
 });
 const getConfig = async (req, res) => {
     try {
@@ -95,6 +109,7 @@ const updateConfig = async (req, res) => {
             return res.status(403).json({ error: 'No tiene permisos para configurar este negocio' });
         }
         const data = req.body;
+        console.log('Recibiendo actualización de configuración:', JSON.stringify(data, null, 2));
         if (data.servicios && Array.isArray(data.servicios)) {
             data.servicios.forEach((servicio) => {
                 if (!servicio.id) {
