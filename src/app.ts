@@ -17,6 +17,7 @@ import configRoutes from './routes/api.routes';
 import { Request, Response, NextFunction } from 'express';
 
 import { handleStripeWebhook } from './controllers/payment.controller';
+import { getBusinessSharePage } from './controllers/share.controller';
 
 const app = express();
 
@@ -77,6 +78,9 @@ app.use(express.json({ limit: '10kb' })); // Limitar tamaño de payload
 
 // Logger de solicitudes HTTP
 app.use(morgan('dev'));
+
+/** HTML con metadatos Open Graph (Nginx reenvía aquí el tráfico de crawlers sociales). */
+app.get('/__share/:slug', getBusinessSharePage);
 
 // 3. Middleware de timeout global
 app.use((req: Request, res: Response, next: NextFunction) => {

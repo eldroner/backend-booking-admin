@@ -18,6 +18,7 @@ const cors_1 = __importDefault(require("cors"));
 const morgan_1 = __importDefault(require("morgan"));
 const api_routes_1 = __importDefault(require("./routes/api.routes"));
 const payment_controller_1 = require("./controllers/payment.controller");
+const share_controller_1 = require("./controllers/share.controller");
 const app = (0, express_1.default)();
 // 1. Configuración mejorada de MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/booking-manager';
@@ -66,6 +67,8 @@ app.post('/api/payments/webhook', express_1.default.raw({ type: 'application/jso
 app.use(express_1.default.json({ limit: '10kb' })); // Limitar tamaño de payload
 // Logger de solicitudes HTTP
 app.use((0, morgan_1.default)('dev'));
+/** HTML con metadatos Open Graph (Nginx reenvía aquí el tráfico de crawlers sociales). */
+app.get('/__share/:slug', share_controller_1.getBusinessSharePage);
 // 3. Middleware de timeout global
 app.use((req, res, next) => {
     res.setTimeout(8000, () => {
