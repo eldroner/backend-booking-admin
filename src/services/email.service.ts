@@ -126,7 +126,7 @@ export const sendCancellationEmail = async (data: CancellationEmailData) => {
     <p>La cita estaba programada para el <strong>${data.booking_date}</strong> a las <strong>${data.booking_time}</strong>.</p>
     <p>Si todavía deseas el servicio, puedes crear una nueva reserva:</p>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="https://reservas.pixelnova.es/${data.business_id}" style="background-color: #CF0D0E; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
+      <a href="https://bookiss.es/${data.business_id}" style="background-color: #CF0D0E; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
         Crear Nueva Reserva
       </a>
     </div>
@@ -149,8 +149,8 @@ export const sendCancellationEmail = async (data: CancellationEmailData) => {
 };
 
 export const sendWelcomeEmail = async (data: WelcomeEmailData) => {
-  const adminUrl = `https://reservas.pixelnova.es/${data.business_id}/admin`;
-  const publicUrl = `https://reservas.pixelnova.es/${data.business_id}`;
+  const adminUrl = `https://bookiss.es/${data.business_id}/admin`;
+  const publicUrl = `https://bookiss.es/${data.business_id}`;
 
   const title = "¡Bienvenido a tu Sistema de Reservas!";
   const content = `

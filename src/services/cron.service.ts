@@ -75,7 +75,7 @@ export const startRatingRequestJob = () => {
         const config = await BusinessConfigModel.findOne({ idNegocio: reserva.idNegocio });
 
         if (staff && config) {
-          const ratingLink = `https://reservas.pixelnova.es/valorar/${reserva.ratingToken}`;
+          const ratingLink = `https://bookiss.es/valorar/${reserva.ratingToken}`;
 
           try {
             await sendRatingRequestEmail({

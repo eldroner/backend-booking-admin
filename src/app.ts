@@ -51,7 +51,9 @@ const allowedOrigins = [
   'http://localhost:4200',
   'http://127.0.0.1:4200',
   'https://reservas.pixelnova.es',
-  'https://www.reservas.pixelnova.es'
+  'https://www.reservas.pixelnova.es',
+  'https://bookiss.es',
+  'https://www.bookiss.es'
 ];
 
 app.use(cors({
@@ -87,8 +89,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// 4. Health Check Endpoint
-app.get('/health', (req: Request, res: Response) => {
+// 5. Conectar rutas principales
+app.use('/api', configRoutes);
+
+// 4. Health Check Endpoint (Moved after /api to be consistent or just use /api/health)
+app.get('/api/health', (req: Request, res: Response) => {
   const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   res.json({ 
     status: 'OK',
@@ -98,8 +103,6 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-// 5. Conectar rutas principales
-app.use('/api', configRoutes);
 
 // 6. Manejador de errores global
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
