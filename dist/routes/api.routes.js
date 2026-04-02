@@ -51,6 +51,8 @@ const adminController = __importStar(require("../controllers/admin.controller"))
 const super_admin_auth_middleware_1 = require("../middleware/super-admin-auth.middleware");
 const upload_controller_1 = require("../controllers/upload.controller");
 const multer = require("multer");
+const staff_controller_1 = require("../controllers/staff.controller");
+const rating_controller_1 = require("../controllers/rating.controller");
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express_1.default.Router();
 // Rutas de autenticación de administrador
@@ -82,6 +84,14 @@ router.get('/servicios', servicios_controller_1.getServicios);
 router.post('/servicios', auth_middleware_1.authenticateAdmin, servicios_controller_1.addServicio);
 router.put('/servicios/:id', auth_middleware_1.authenticateAdmin, servicios_controller_1.updateServicio);
 router.delete('/servicios/:id', auth_middleware_1.authenticateAdmin, servicios_controller_1.deleteServicio);
+// Personal (Equipo)
+router.get('/staff', staff_controller_1.getStaff);
+router.post('/staff', auth_middleware_1.authenticateAdmin, staff_controller_1.addStaff);
+router.put('/staff/:id', auth_middleware_1.authenticateAdmin, staff_controller_1.updateStaff);
+router.delete('/staff/:id', auth_middleware_1.authenticateAdmin, staff_controller_1.deleteStaff);
+// Valoraciones
+router.get('/rating/info/:token', rating_controller_1.getRatingInfo);
+router.post('/rating/submit/:token', rating_controller_1.submitRating);
 // Reservas (algunas protegidas)
 router.get('/reservas', reservas_controller_1.getReservas);
 router.get('/reservas/statistics', auth_middleware_1.authenticateAdmin, reservas_controller_1.getStatistics);

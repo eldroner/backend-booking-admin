@@ -11,6 +11,57 @@ const config_model_1 = require("../models/config.model");
 const allowed_business_model_1 = require("../models/allowed-business.model");
 const crypto_1 = __importDefault(require("crypto"));
 const holiday_service_1 = require("../services/holiday.service");
+const staff_model_1 = require("../models/staff.model");
+async function resolveStaffNombre(staffId, idNegocio) {
+    if (!staffId)
+        return undefined;
+    const doc = await staff_model_1.StaffModel.findOne({ _id: staffId, idNegocio }).select('nombre').lean();
+    return doc?.nombre != null ? String(doc.nombre).trim() || undefined : undefined;
+}
+/**
+ * Reservas sin profesional concreto: cupo = nº de profesionales activos que pueden hacer el servicio
+ * (serviciosIds vacío = todos). Si no hay staff en BD, se usa maxReservasPorSlot (comportamiento legacy).
+ */
+async function poolCapacitySinProfesionalAsignado(idNegocio, maxReservasPorSlot, servicioId) {
+    const filter = { idNegocio, activo: true };
+    if (servicioId) {
+        filter.$or = [
+            { serviciosIds: { $exists: false } },
+            { serviciosIds: { $size: 0 } },
+            { serviciosIds: servicioId }
+        ];
+    }
+    const n = await staff_model_1.StaffModel.countDocuments(filter);
+    if (n > 0) {
+        return n;
+    }
+    return Math.max(1, maxReservasPorSlot || 1);
+}
+/** Reservas activas que solapan [fechaInicio, fechaInicio + duración). Misma lógica en /disponibilidad y al crear reserva. */
+async function countReservasSolapadas(idNegocio, fechaInicio, duracionMinutos, staffFilter) {
+    const fechaFin = new Date(fechaInicio.getTime() + duracionMinutos * 60000);
+    const query = {
+        idNegocio,
+        estado: { $in: ['confirmada', 'pendiente_email'] },
+        $or: [
+            { fechaInicio: { $lt: fechaFin }, fechaFin: { $gt: fechaInicio } },
+            {
+                fechaInicio: { $lt: fechaFin },
+                fechaFin: { $exists: false },
+                $expr: {
+                    $gt: [
+                        { $add: ['$fechaInicio', { $multiply: [{ $ifNull: ['$duracion', 30] }, 60000] }] },
+                        fechaInicio
+                    ]
+                }
+            }
+        ]
+    };
+    if (staffFilter) {
+        query.staffId = staffFilter;
+    }
+    return reserva_model_1.ReservaModel.countDocuments(query);
+}
 const createReserva = async (req, res) => {
     try {
         const { idNegocio, ...reservaBody } = req.body;
@@ -50,6 +101,28 @@ const createReserva = async (req, res) => {
                 });
             }
         }
+        if (!idNegocio) {
+            return res.status(400).json({ error: 'idNegocio es requerido' });
+        }
+        const duracionMin = reservaBody.duracion || 30;
+        const solapes = await countReservasSolapadas(idNegocio, fechaInicio, duracionMin, reservaBody.staffId);
+        if (reservaBody.staffId) {
+            if (solapes > 0) {
+                return res.status(409).json({
+                    error: 'Ese profesional no está disponible en el horario elegido.',
+                    detalles: 'Ya existe una reserva solapada para este miembro del equipo.'
+                });
+            }
+        }
+        else {
+            const poolCap = await poolCapacitySinProfesionalAsignado(idNegocio, config?.maxReservasPorSlot ?? 1, reservaBody.servicio);
+            if (solapes >= poolCap) {
+                return res.status(409).json({
+                    error: 'No hay huecos libres para ese horario.',
+                    detalles: 'El cupo de reservas para esta franja está completo.'
+                });
+            }
+        }
         if (!process.env.JWT_SECRET) {
             throw new Error("JWT_SECRET no está configurado en las variables de entorno");
         }
@@ -62,6 +135,7 @@ const createReserva = async (req, res) => {
             throw new Error("Error al generar el token de confirmación");
         }
         const cancellationToken = crypto_1.default.randomBytes(32).toString('hex');
+        const ratingToken = crypto_1.default.randomBytes(32).toString('hex'); // Token para valoración
         // Obtener el email de contacto del negocio
         const negocioPermitido = await allowed_business_model_1.AllowedBusinessModel.findOne({ idNegocio: idNegocio });
         if (!negocioPermitido) {
@@ -77,10 +151,14 @@ const createReserva = async (req, res) => {
                 precioBase = servicio.enOferta && servicio.precioOferta ? servicio.precioOferta : (servicio.precio || 0);
             }
         }
+        const staffNombre = await resolveStaffNombre(reservaBody.staffId, idNegocio);
         // Crear objeto de reserva
+        const reservaId = (0, uuid_1.v4)();
         const reservaData = {
-            _id: (0, uuid_1.v4)(),
+            _id: reservaId,
             idNegocio: idNegocio,
+            staffId: reservaBody.staffId,
+            ...(staffNombre && { staffNombre }),
             usuario: {
                 nombre: reservaBody.usuario.nombre.trim(),
                 email: reservaBody.usuario.email.trim().toLowerCase(),
@@ -92,6 +170,7 @@ const createReserva = async (req, res) => {
             estado: 'pendiente_email',
             confirmacionToken,
             cancellation_token: cancellationToken,
+            ratingToken, // Guardar el token de valoración
             duracion: reservaBody.duracion || 30,
             expiresAt: new Date(Date.now() + 30 * 60 * 1000) // 30 minutos
         };
@@ -133,10 +212,31 @@ const createReserva = async (req, res) => {
 exports.createReserva = createReserva;
 const addReservaAdmin = async (req, res) => {
     try {
-        const { idNegocio, ...reservaData } = req.body;
+        const { idNegocio, ...reservaDataRaw } = req.body;
+        const { staffNombre: _clientStaffNombre, ...reservaData } = reservaDataRaw;
+        if (!idNegocio) {
+            return res.status(400).json({ message: 'idNegocio es requerido' });
+        }
+        const inicio = new Date(reservaData.fechaInicio);
+        if (isNaN(inicio.getTime())) {
+            return res.status(400).json({ message: 'fechaInicio inválida' });
+        }
+        const config = await config_model_1.BusinessConfigModel.findOne({ idNegocio });
+        const duracionAdmin = reservaData.duracion || 30;
+        const solapesAdmin = await countReservasSolapadas(idNegocio, inicio, duracionAdmin, reservaData.staffId);
+        if (reservaData.staffId) {
+            if (solapesAdmin > 0) {
+                return res.status(409).json({ message: 'Ese profesional ya tiene una reserva en ese horario.' });
+            }
+        }
+        else {
+            const poolCapAdmin = await poolCapacitySinProfesionalAsignado(idNegocio, config?.maxReservasPorSlot ?? 1, reservaData.servicio);
+            if (solapesAdmin >= poolCapAdmin) {
+                return res.status(409).json({ message: 'No hay huecos libres para ese horario.' });
+            }
+        }
         // Obtener precio base del servicio
         let precioBase = 0;
-        const config = await config_model_1.BusinessConfigModel.findOne({ idNegocio });
         if (config) {
             const servicio = config.servicios.find(s => s.id === reservaData.servicio);
             if (servicio) {
@@ -144,12 +244,16 @@ const addReservaAdmin = async (req, res) => {
             }
         }
         const uniqueToken = `admin-generated-${crypto_1.default.randomBytes(8).toString('hex')}`;
+        const ratingToken = crypto_1.default.randomBytes(32).toString('hex');
+        const staffNombreAdmin = await resolveStaffNombre(reservaData.staffId, idNegocio);
         const reserva = new reserva_model_1.ReservaModel({
             _id: (0, uuid_1.v4)(),
             ...reservaData,
             precioFinal: reservaData.precioFinal !== undefined ? reservaData.precioFinal : precioBase,
             ...(idNegocio && { idNegocio }),
+            staffNombre: staffNombreAdmin,
             confirmacionToken: uniqueToken,
+            ratingToken,
             estado: 'confirmada'
         });
         await reserva.save();
@@ -247,23 +351,28 @@ const getReservas = async (req, res) => {
             .sort({ fechaInicio: 1 })
             .select('+duracion')
             .lean();
-        const response = reservas.map(reserva => ({
-            id: reserva._id.toString(),
-            usuario: {
-                nombre: reserva.usuario.nombre,
-                email: reserva.usuario.email,
-                ...(reserva.usuario.telefono && { telefono: reserva.usuario.telefono })
-            },
-            fechaInicio: reserva.fechaInicio.toISOString(),
-            ...(reserva.fechaFin && { fechaFin: reserva.fechaFin.toISOString() }),
-            ...(reserva.expiresAt && { expiresAt: reserva.expiresAt.toISOString() }), // Add this line
-            servicio: reserva.servicio,
-            estado: reserva.estado,
-            confirmacionToken: reserva.confirmacionToken || '',
-            duracion: reserva.duracion || 30, // Valor por defecto seguro
-            precioFinal: reserva.precioFinal,
-            notas: reserva.notas
-        }));
+        const response = reservas.map(reserva => {
+            const lean = reserva;
+            return {
+                id: reserva._id.toString(),
+                usuario: {
+                    nombre: reserva.usuario.nombre,
+                    email: reserva.usuario.email,
+                    ...(reserva.usuario.telefono && { telefono: reserva.usuario.telefono })
+                },
+                fechaInicio: reserva.fechaInicio.toISOString(),
+                ...(reserva.fechaFin && { fechaFin: reserva.fechaFin.toISOString() }),
+                ...(reserva.expiresAt && { expiresAt: reserva.expiresAt.toISOString() }),
+                servicio: reserva.servicio,
+                estado: reserva.estado,
+                confirmacionToken: reserva.confirmacionToken || '',
+                duracion: reserva.duracion || 30,
+                precioFinal: reserva.precioFinal,
+                notas: reserva.notas,
+                ...(lean.staffId && { staffId: lean.staffId }),
+                ...(lean.staffNombre && { staffNombre: lean.staffNombre })
+            };
+        });
         return res.json(response);
     }
     catch (error) {
@@ -427,20 +536,38 @@ const getStatistics = async (req, res) => {
 exports.getStatistics = getStatistics;
 const checkDisponibilidad = async (req, res) => {
     try {
-        const { idNegocio, fecha, hora, duracion } = req.query;
-        if (!idNegocio || !fecha || !hora || !duracion) {
+        const { idNegocio, fecha, hora, duracion, staffId, fechaInicio: fechaInicioParam, servicio: servicioQuery } = req.query;
+        if (!idNegocio || !duracion) {
             return res.status(400).json({ error: 'Faltan parámetros requeridos' });
         }
         const config = await config_model_1.BusinessConfigModel.findOne({ idNegocio: idNegocio });
         if (!config) {
             return res.status(404).json({ error: 'Configuración no encontrada' });
         }
-        const fechaInicio = new Date(`${fecha}T${hora}:00`);
+        let fechaInicio;
+        if (fechaInicioParam && typeof fechaInicioParam === 'string') {
+            fechaInicio = new Date(fechaInicioParam);
+        }
+        else if (fecha && hora) {
+            fechaInicio = new Date(`${fecha}T${hora}:00`);
+        }
+        else {
+            return res.status(400).json({ error: 'Se requiere fechaInicio (ISO) o fecha y hora' });
+        }
+        if (isNaN(fechaInicio.getTime())) {
+            return res.status(400).json({ error: 'fechaInicio inválida' });
+        }
+        // YYYY-MM-DD para festivos y horarios especiales (cuando solo viene fechaInicio ISO, `fecha` query va vacía)
+        const dateStrCalendario = typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha)
+            ? fecha
+            : typeof fechaInicioParam === 'string' && fechaInicioParam.length >= 10
+                ? fechaInicioParam.slice(0, 10)
+                : fechaInicio.toISOString().slice(0, 10);
         const fechaFin = new Date(fechaInicio.getTime() + Number(duracion) * 60000);
         // 1. Validar festivos (con prioridad para horarios especiales)
-        const hasSpecialSchedule = config.horariosEspeciales?.some(h => h.fecha === fecha && h.activo);
+        const hasSpecialSchedule = config.horariosEspeciales?.some(h => h.fecha === dateStrCalendario && h.activo);
         if (!hasSpecialSchedule) {
-            const isHoliday = await holiday_service_1.holidayService.isHoliday(fecha, config.provincia);
+            const isHoliday = await holiday_service_1.holidayService.isHoliday(dateStrCalendario, config.provincia);
             if (isHoliday) {
                 return res.json(false);
             }
@@ -453,26 +580,13 @@ const checkDisponibilidad = async (req, res) => {
                 return res.json(false);
             }
         }
-        // 2. Buscar solapamientos
-        const overlappingReservas = await reserva_model_1.ReservaModel.countDocuments({
-            idNegocio: idNegocio,
-            estado: { $in: ['confirmada', 'pendiente_email'] },
-            $or: [
-                { fechaInicio: { $lt: fechaFin }, fechaFin: { $gt: fechaInicio } },
-                {
-                    fechaInicio: { $lt: fechaFin },
-                    fechaFin: { $exists: false },
-                    // Si no tiene fechaFin, asumimos que dura 'duracion' (o lo que tenga guardado)
-                    $expr: {
-                        $gt: [
-                            { $add: ["$fechaInicio", { $multiply: ["$duracion", 60000] }] },
-                            fechaInicio
-                        ]
-                    }
-                }
-            ]
-        });
-        if (overlappingReservas >= config.maxReservasPorSlot) {
+        const overlapping = await countReservasSolapadas(idNegocio, fechaInicio, Number(duracion), staffId ? staffId : null);
+        if (staffId) {
+            return res.json(overlapping === 0);
+        }
+        const servicioId = typeof servicioQuery === 'string' ? servicioQuery : undefined;
+        const poolCap = await poolCapacitySinProfesionalAsignado(idNegocio, config.maxReservasPorSlot ?? 1, servicioId);
+        if (overlapping >= poolCap) {
             return res.json(false);
         }
         return res.json(true);
@@ -488,12 +602,13 @@ const getHolidays = async (req, res) => {
         const { year, provincia } = req.query;
         if (!year)
             return res.status(400).json({ error: 'El año es requerido' });
-        const holidays = await holiday_service_1.holidayService.getHolidays(Number(year));
+        const y = typeof year === 'string' ? parseInt(year, 10) : Number(year);
+        const holidays = await holiday_service_1.holidayService.getHolidays(y);
         // Filtrar por provincia si se proporciona
         const filteredHolidays = holidays.filter(h => {
             if (h.global || h.counties === null)
                 return true;
-            if (provincia && h.counties.includes(`ES-${provincia}`))
+            if (provincia && Array.isArray(h.counties) && h.counties.includes(`ES-${provincia}`))
                 return true;
             return false;
         });

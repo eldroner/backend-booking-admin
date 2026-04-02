@@ -31,6 +31,7 @@ const mongooseOptions = {
 mongoose_1.default.connect(MONGODB_URI, mongooseOptions)
     .then(() => {
     (0, cron_service_1.startReservationCleanupJob)(); // Start the cron job
+    (0, cron_service_1.startRatingRequestJob)(); // Start the rating request job
 })
     .catch(err => {
     console.error('❌ Error de conexión a MongoDB:', err.message);

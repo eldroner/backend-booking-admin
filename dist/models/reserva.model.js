@@ -5,6 +5,11 @@ const mongoose_1 = require("mongoose");
 const reservaSchema = new mongoose_1.Schema({
     _id: { type: String, required: true },
     idNegocio: { type: String, required: false },
+    staffId: { type: String, required: false, index: true },
+    staffNombre: { type: String, required: false, trim: true },
+    ratingToken: { type: String, sparse: true, index: true },
+    ratingSubmitted: { type: Boolean, default: false },
+    ratingRequestSent: { type: Boolean, default: false },
     usuario: {
         nombre: {
             type: String,
