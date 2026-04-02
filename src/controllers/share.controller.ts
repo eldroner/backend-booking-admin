@@ -38,6 +38,12 @@ export const getBusinessSharePage = async (req: Request, res: Response) => {
       imageUrl = config.googleCustomLogo;
     }
 
+    // Transformación para Cloudinary (forzar 1200x630 horizontal y optimizar)
+    if (imageUrl.includes('cloudinary.com')) {
+      // Reemplaza /upload/ por /upload/c_fill,g_auto,w_1200,h_630,q_auto,f_auto/
+      imageUrl = imageUrl.replace('/upload/', '/upload/c_fill,g_auto,w_1200,h_630,q_auto,f_auto/');
+    }
+
     const canonicalUrl = `${frontendUrl}/${slug}`;
 
     // 3. Responder con el HTML mínimo para bots
@@ -56,6 +62,8 @@ export const getBusinessSharePage = async (req: Request, res: Response) => {
         <meta property="og:title" content="Reserva tu cita en ${nombre}">
         <meta property="og:description" content="${description}">
         <meta property="og:image" content="${imageUrl}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
         
         <!-- Twitter -->
         <meta name="twitter:card" content="summary_large_image">

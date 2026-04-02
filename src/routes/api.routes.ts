@@ -17,7 +17,13 @@ import multer = require('multer');
 import { getStaff, addStaff, updateStaff, deleteStaff } from '../controllers/staff.controller';
 import { submitRating, getRatingInfo } from '../controllers/rating.controller';
 
-const upload = multer({ storage: multer.memoryStorage() });
+/** Límite por archivo (coincide con lo recomendado en Nginx: client_max_body_size). */
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_UPLOAD_BYTES, files: 10 }
+});
 const router = express.Router();
 
 // Rutas de autenticación de administrador

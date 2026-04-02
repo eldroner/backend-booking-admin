@@ -91,24 +91,34 @@ app.get('/api/health', (req, res) => {
         environment: process.env.NODE_ENV || 'development'
     });
 });
-// 6. Manejador de errores global
+// 6. Ruta para 404
+app.use('*', (req, res) => {
+    res.status(404).json({
+        error: 'Ruta no encontrada',
+        attemptedPath: req.originalUrl
+    });
+});
+// 7. Manejador de errores global (debe ir al final)
 app.use((err, req, res, next) => {
+    const m = err;
+    if (m?.name === 'MulterError') {
+        if (m.code === 'LIMIT_FILE_SIZE') {
+            return res.status(413).json({
+                error: 'La imagen supera el tamaño máximo permitido (10 MB). Prueba con otra más pequeña o comprímela.'
+            });
+        }
+        return res.status(400).json({ error: m.message || 'Error al subir el archivo' });
+    }
+    const e = err instanceof Error ? err : new Error(String(err));
     console.error('🔥 Error global:', {
-        error: err.message,
-        stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
+        error: e.message,
+        stack: process.env.NODE_ENV === 'production' ? undefined : e.stack,
         path: req.path,
         method: req.method
     });
     res.status(500).json({
         error: 'Error interno del servidor',
-        ...(process.env.NODE_ENV !== 'production' && { details: err.message })
-    });
-});
-// 7. Ruta para 404
-app.use('*', (req, res) => {
-    res.status(404).json({
-        error: 'Ruta no encontrada',
-        attemptedPath: req.originalUrl
+        ...(process.env.NODE_ENV !== 'production' && { details: e.message })
     });
 });
 // 8. Configuración del servidor

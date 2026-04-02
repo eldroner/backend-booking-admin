@@ -53,7 +53,12 @@ const upload_controller_1 = require("../controllers/upload.controller");
 const multer = require("multer");
 const staff_controller_1 = require("../controllers/staff.controller");
 const rating_controller_1 = require("../controllers/rating.controller");
-const upload = multer({ storage: multer.memoryStorage() });
+/** Límite por archivo (coincide con lo recomendado en Nginx: client_max_body_size). */
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: MAX_UPLOAD_BYTES, files: 10 }
+});
 const router = express_1.default.Router();
 // Rutas de autenticación de administrador
 router.post('/admin/login-by-email', auth_controller_1.loginByEmail);
