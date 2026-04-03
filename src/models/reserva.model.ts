@@ -14,9 +14,13 @@ export interface IReserva extends Document {
   servicio: string;
   estado: string;
   confirmacionToken: string;
+  cancellation_token?: string;
   ratingToken?: string; // Token para valorar después del servicio
   ratingSubmitted?: boolean; // Si ya se ha valorado
   ratingRequestSent?: boolean; // Si ya se ha enviado el email de valoración
+  /** Origen de la reserva: solo `web` recibe recordatorio por email */
+  origen?: 'web' | 'admin';
+  reminderEmailSent?: boolean;
   staffId?: string; // ID del miembro del equipo (opcional, null = cualquiera)
   staffNombre?: string; // Denormalizado para listados y comprobación visual
   duracion?: number; // Añade esta línea
@@ -35,6 +39,12 @@ const reservaSchema = new Schema<IReserva>({
   ratingToken: { type: String, sparse: true, index: true },
   ratingSubmitted: { type: Boolean, default: false },
   ratingRequestSent: { type: Boolean, default: false },
+  origen: {
+    type: String,
+    enum: ['web', 'admin'],
+    default: 'web'
+  },
+  reminderEmailSent: { type: Boolean, default: false },
   usuario: {
     nombre: { 
       type: String, 

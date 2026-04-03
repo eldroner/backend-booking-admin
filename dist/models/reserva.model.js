@@ -10,6 +10,12 @@ const reservaSchema = new mongoose_1.Schema({
     ratingToken: { type: String, sparse: true, index: true },
     ratingSubmitted: { type: Boolean, default: false },
     ratingRequestSent: { type: Boolean, default: false },
+    origen: {
+        type: String,
+        enum: ['web', 'admin'],
+        default: 'web'
+    },
+    reminderEmailSent: { type: Boolean, default: false },
     usuario: {
         nombre: {
             type: String,

@@ -1,4 +1,4 @@
-import { startReservationCleanupJob, startRatingRequestJob } from './services/cron.service';
+import { startReservationCleanupJob, startRatingRequestJob, startBookingReminderJob } from './services/cron.service';
 import mongoose from 'mongoose';
 import 'dotenv/config';
 import cloudinary from './config/cloudinary'; // Importar el objeto cloudinary
@@ -37,8 +37,9 @@ const mongooseOptions = {
 
 mongoose.connect(MONGODB_URI, mongooseOptions)
   .then(() => {
-    startReservationCleanupJob(); // Start the cron job
-    startRatingRequestJob(); // Start the rating request job
+    startReservationCleanupJob();
+    startRatingRequestJob();
+    startBookingReminderJob();
   })
   .catch(err => {
     console.error('❌ Error de conexión a MongoDB:', err.message);

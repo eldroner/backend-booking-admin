@@ -49,6 +49,18 @@ interface BookingConfirmationEmailData {
   booking_time: string;
 }
 
+interface BookingReminderEmailData {
+  to_email: string;
+  user_name: string;
+  business_name: string;
+  service_name: string;
+  service_price?: number;
+  booking_date: string;
+  booking_time: string;
+  cancellation_link: string;
+  public_booking_url: string;
+}
+
 interface AdminNotificationEmailData {
   to_email: string;
   user_name: string;
@@ -246,6 +258,38 @@ export const sendEmailChangedEmail = async (data: EmailChangedEmailData) => {
     await transporter.sendMail(newEmailOptions);
   } catch (error) {
     console.error('Error al enviar email de cambio de email:', error);
+    throw error;
+  }
+};
+
+export const sendBookingReminderEmail = async (data: BookingReminderEmailData) => {
+  const title = 'Recordatorio de tu cita';
+  const content = `
+    <p>Hola <strong>${data.user_name}</strong>,</p>
+    <p>Te recordamos que tienes una reserva confirmada en <strong>${data.business_name}</strong>:</p>
+    <p style="font-size: 18px; font-weight: bold; color: #333; text-align: center; margin: 20px 0;">${data.service_name}${data.service_price && data.service_price > 0 ? ` - ${Number(data.service_price).toFixed(2)}€` : ''}</p>
+    <p style="text-align: center;">El <strong>${data.booking_date}</strong> a las <strong>${data.booking_time}</strong></p>
+    <p>Si <strong>no puedes asistir</strong>, por favor cancela con antelación para liberar la hora:</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${data.cancellation_link}" style="background-color: #CF0D0E; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
+        Cancelar mi reserva
+      </a>
+    </div>
+    <p style="font-size: 14px; color: #666;">También puedes gestionar otras reservas desde el enlace de tu negocio: <a href="${data.public_booking_url}" style="color: #BE5B5D;">${data.public_booking_url}</a></p>
+    <p style="margin-top: 20px;">Saludos cordiales,<br>El equipo de <strong>${data.business_name}</strong></p>
+  `;
+
+  const mailOptions = {
+    from: `"Reservas Pixelnova" <${SENDER_EMAIL}>`,
+    to: data.to_email,
+    subject: `Recordatorio: tu cita en ${data.business_name}`,
+    html: emailWrapper(title, content),
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Error al enviar email de recordatorio de reserva:', error);
     throw error;
   }
 };

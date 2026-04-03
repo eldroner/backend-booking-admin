@@ -250,7 +250,8 @@ export const createReserva = async (
       cancellation_token: cancellationToken,
       ratingToken, // Guardar el token de valoración
       duracion: reservaBody.duracion || 30,
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000) // 30 minutos
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutos
+      origen: 'web' as const
     };
 
     // Añadir fechaFin si existe
@@ -294,8 +295,9 @@ export const createReserva = async (
 export const addReservaAdmin = async (req: Request, res: Response) => {
     try {
         const { idNegocio, ...reservaDataRaw } = req.body;
-        const { staffNombre: _clientStaffNombre, ...reservaData } = reservaDataRaw as typeof reservaDataRaw & {
+        const { staffNombre: _clientStaffNombre, origen: _origenCliente, ...reservaData } = reservaDataRaw as typeof reservaDataRaw & {
           staffNombre?: string;
+          origen?: string;
         };
 
         if (!idNegocio) {
@@ -351,7 +353,8 @@ export const addReservaAdmin = async (req: Request, res: Response) => {
             staffNombre: staffNombreAdmin,
             confirmacionToken: uniqueToken,
             ratingToken,
-            estado: 'confirmada'
+            estado: 'confirmada',
+            origen: 'admin' as const
         });
         await reserva.save();
         res.status(201).json(reserva);
