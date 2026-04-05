@@ -7,9 +7,19 @@ export interface IAllowedBusiness extends Document {
   estado: 'pendiente' | 'activo';
   fechaCreacion: Date;
   stripeSubscriptionId?: string;
-  subscriptionStatus?: 'trialing' | 'active' | 'canceled' | 'paused' | 'unpaid';
+  subscriptionStatus?: 'trialing' | 'active' | 'canceled' | 'paused' | 'unpaid' | 'past_due' | 'incomplete' | 'incomplete_expired';
   periodEndDate?: Date;
   cancelAtPeriodEnd?: boolean;
+  /** Fin del periodo de gracia tras fallo de pago (tras este momento se puede purgar la cuenta). */
+  billingGraceEndsAt?: Date;
+  /** Evita reenviar el mismo email en cada reintento de cobro de Stripe. */
+  billingFailureEmailSentAt?: Date;
+  /** Si es futura, no se permiten reservas nuevas (vista admin sigue accesible). */
+  pausedUntil?: Date;
+  /** Origen del alta: panel super-admin vs registro web con Stripe. */
+  billingOnboardingSource?: 'super_admin' | 'stripe_self_serve';
+  /** Última vez que se envió la invitación para vincular Stripe (alta manual). */
+  stripeBillingInviteSentAt?: Date;
 }
 
 const AllowedBusinessSchema = new Schema<IAllowedBusiness>({
@@ -45,7 +55,7 @@ const AllowedBusinessSchema = new Schema<IAllowedBusiness>({
   },
   subscriptionStatus: {
     type: String,
-    enum: ['trialing', 'active', 'canceled', 'paused', 'unpaid'],
+    enum: ['trialing', 'active', 'canceled', 'paused', 'unpaid', 'past_due', 'incomplete', 'incomplete_expired'],
     required: false,
   },
   periodEndDate: {
@@ -55,6 +65,27 @@ const AllowedBusinessSchema = new Schema<IAllowedBusiness>({
   cancelAtPeriodEnd: {
     type: Boolean,
     default: false,
+  },
+  billingGraceEndsAt: {
+    type: Date,
+    required: false,
+  },
+  billingFailureEmailSentAt: {
+    type: Date,
+    required: false,
+  },
+  pausedUntil: {
+    type: Date,
+    required: false,
+  },
+  billingOnboardingSource: {
+    type: String,
+    enum: ['super_admin', 'stripe_self_serve'],
+    required: false,
+  },
+  stripeBillingInviteSentAt: {
+    type: Date,
+    required: false,
   },
 });
 

@@ -6,7 +6,7 @@ import { getServicios, addServicio, updateServicio, deleteServicio } from '../co
 import { createCheckoutSession, getCheckoutSessionStatus, cancelSubscription, getSubscriptionDetails, revertSubscriptionCancellation } from '../controllers/payment.controller';
 import { sendBookingConfirmation, sendAdminNotification } from '../controllers/email.controller'; // Importar el nuevo controlador de email
 import { loginByEmail } from '../controllers/auth.controller'; // Importar el nuevo controlador
-import { initializeBusiness } from '../controllers/business.controller'; // Importar el nuevo controlador de negocio
+import { initializeBusiness, getOperationalStatus, updateBusinessPause } from '../controllers/business.controller';
 import { authenticateAdmin } from '../middleware/auth.middleware'; // Importar el middleware de autenticación
 import * as superAdminController from '../controllers/super-admin.controller';
 import * as adminController from '../controllers/admin.controller';
@@ -35,6 +35,8 @@ router.put('/admin/update-password', authenticateAdmin, adminController.updateAd
 
 // Rutas de gestión de negocio
 router.post('/business/initialize', authenticateAdmin, initializeBusiness);
+router.get('/business/operational-status', getOperationalStatus);
+router.put('/business/pause', authenticateAdmin, updateBusinessPause);
 
 // Configuración del negocio (GET es público, PUT protegido)
 router.get('/config', getConfig);
@@ -101,7 +103,17 @@ router.post('/super-admin/login', superAdminController.superAdminLogin);
 // Business Management (protected by super-admin auth)
 router.get('/super-admin/businesses', superAdminAuth, superAdminController.getAllBusinesses);
 router.post('/super-admin/businesses', superAdminAuth, superAdminController.createBusiness);
+router.post(
+  '/super-admin/businesses/bulk-send-stripe-activation',
+  superAdminAuth,
+  superAdminController.sendBulkStripeActivationInvites
+);
 router.delete('/super-admin/businesses/:id', superAdminAuth, superAdminController.deleteBusiness);
 router.post('/super-admin/businesses/:id/reset-password', superAdminAuth, superAdminController.resetAdminPassword);
+router.post(
+  '/super-admin/businesses/:id/send-stripe-activation',
+  superAdminAuth,
+  superAdminController.sendStripeActivationInvite
+);
 
 export default router;

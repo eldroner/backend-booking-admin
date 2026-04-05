@@ -2,9 +2,9 @@ import { Request, Response } from 'express';
 import { AllowedBusinessModel } from '../models/allowed-business.model';
 import { BusinessConfigModel } from '../models/config.model';
 import { ReservaModel } from '../models/reserva.model';
-import { sendWelcomeEmail } from '../services/email.service';
+import { sendWelcomeEmail, sendManualBillingActivationEmail } from '../services/email.service';
+import { createStripeSubscriptionCheckoutUrl } from './payment.controller';
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
 
 // --- Super Admin Login ---
 export const superAdminLogin = async (req: Request, res: Response) => {
@@ -53,12 +53,12 @@ export const createBusiness = async (req: Request, res: Response) => {
       return res.status(409).json({ message: `El ID de negocio '${idNegocio}' ya está en uso.` });
     }
 
-    // 1. Crear el negocio permitido
+    // 1. Crear el negocio permitido (sin Stripe hasta que el cliente pague tras la invitación)
     const newBusiness = new AllowedBusinessModel({
       idNegocio,
       emailContacto,
       estado: 'activo',
-      subscriptionStatus: 'active',
+      billingOnboardingSource: 'super_admin',
       cancelAtPeriodEnd: false,
     });
 
@@ -130,6 +130,81 @@ export const deleteBusiness = async (req: Request, res: Response) => {
   }
 };
 
+
+async function runStripeActivationInviteForBusiness(mongoId: string): Promise<void> {
+  const business = await AllowedBusinessModel.findById(mongoId);
+  if (!business) {
+    throw new Error('Negocio no encontrado');
+  }
+  if (business.stripeSubscriptionId) {
+    throw new Error('Este negocio ya tiene suscripción de pago en Stripe');
+  }
+  if (business.billingOnboardingSource === 'stripe_self_serve') {
+    throw new Error('Los negocios dados de alta por la web no usan esta invitación');
+  }
+
+  const checkoutUrl = await createStripeSubscriptionCheckoutUrl(business.idNegocio, business.emailContacto);
+  const config = await BusinessConfigModel.findOne({ idNegocio: business.idNegocio }).select('nombre').lean();
+  const displayName = (config?.nombre && String(config.nombre).trim()) || business.idNegocio;
+
+  await sendManualBillingActivationEmail({
+    to_email: business.emailContacto,
+    business_display_name: displayName,
+    id_negocio: business.idNegocio,
+    checkout_url: checkoutUrl,
+  });
+
+  business.stripeBillingInviteSentAt = new Date();
+  await business.save();
+}
+
+/** Envía email con enlace Stripe: 30 días de prueba tras pagar; no borra datos existentes. */
+export const sendStripeActivationInvite = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await runStripeActivationInviteForBusiness(id);
+    res.json({ message: 'Invitación de pago enviada al email del negocio.' });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Error desconocido';
+    if (msg === 'Negocio no encontrado') {
+      return res.status(404).json({ message: msg });
+    }
+    if (
+      msg.includes('ya tiene suscripción') ||
+      msg.includes('no usan esta invitación')
+    ) {
+      return res.status(400).json({ message: msg });
+    }
+    console.error('Error en sendStripeActivationInvite:', error);
+    res.status(500).json({ message: 'Error al enviar la invitación o al crear la sesión de pago.' });
+  }
+};
+
+export const sendBulkStripeActivationInvites = async (req: Request, res: Response) => {
+  try {
+    const { ids } = req.body as { ids?: string[] };
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Se requiere un array "ids" con al menos un elemento.' });
+    }
+
+    const results: { id: string; ok: boolean; message?: string }[] = [];
+    for (const rawId of ids) {
+      const id = String(rawId);
+      try {
+        await runStripeActivationInviteForBusiness(id);
+        results.push({ id, ok: true });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Error desconocido';
+        results.push({ id, ok: false, message: msg });
+      }
+    }
+
+    res.json({ results });
+  } catch (error) {
+    console.error('Error en sendBulkStripeActivationInvites:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
 
 export const resetAdminPassword = async (req: Request, res: Response) => {
   try {

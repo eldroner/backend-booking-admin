@@ -141,6 +141,13 @@ const createReserva = async (req, res) => {
         if (!negocioPermitido) {
             return res.status(404).json({ error: 'Negocio no encontrado o no autorizado' });
         }
+        if (negocioPermitido.pausedUntil && negocioPermitido.pausedUntil > new Date()) {
+            return res.status(403).json({
+                error: 'Reservas temporalmente desactivadas',
+                detalles: `El negocio está en pausa hasta el ${negocioPermitido.pausedUntil.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}.`,
+                code: 'BUSINESS_PAUSED',
+            });
+        }
         // Obtener precio base del servicio
         let precioBase = 0;
         if (config) {
@@ -217,6 +224,17 @@ const addReservaAdmin = async (req, res) => {
         const { staffNombre: _clientStaffNombre, origen: _origenCliente, ...reservaData } = reservaDataRaw;
         if (!idNegocio) {
             return res.status(400).json({ message: 'idNegocio es requerido' });
+        }
+        if (idNegocio !== req.idNegocio) {
+            return res.status(403).json({ message: 'No autorizado para crear reservas en este negocio' });
+        }
+        const allowed = await allowed_business_model_1.AllowedBusinessModel.findOne({ idNegocio });
+        if (allowed?.pausedUntil && allowed.pausedUntil > new Date()) {
+            return res.status(403).json({
+                message: 'No se pueden crear reservas: el negocio está en pausa hasta el ' +
+                    allowed.pausedUntil.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }),
+                code: 'BUSINESS_PAUSED',
+            });
         }
         const inicio = new Date(reservaData.fechaInicio);
         if (isNaN(inicio.getTime())) {

@@ -44,7 +44,7 @@ const servicios_controller_1 = require("../controllers/servicios.controller");
 const payment_controller_1 = require("../controllers/payment.controller");
 const email_controller_1 = require("../controllers/email.controller"); // Importar el nuevo controlador de email
 const auth_controller_1 = require("../controllers/auth.controller"); // Importar el nuevo controlador
-const business_controller_1 = require("../controllers/business.controller"); // Importar el nuevo controlador de negocio
+const business_controller_1 = require("../controllers/business.controller");
 const auth_middleware_1 = require("../middleware/auth.middleware"); // Importar el middleware de autenticación
 const superAdminController = __importStar(require("../controllers/super-admin.controller"));
 const adminController = __importStar(require("../controllers/admin.controller"));
@@ -67,6 +67,8 @@ router.put('/admin/update-email', auth_middleware_1.authenticateAdmin, adminCont
 router.put('/admin/update-password', auth_middleware_1.authenticateAdmin, adminController.updateAdminPassword);
 // Rutas de gestión de negocio
 router.post('/business/initialize', auth_middleware_1.authenticateAdmin, business_controller_1.initializeBusiness);
+router.get('/business/operational-status', business_controller_1.getOperationalStatus);
+router.put('/business/pause', auth_middleware_1.authenticateAdmin, business_controller_1.updateBusinessPause);
 // Configuración del negocio (GET es público, PUT protegido)
 router.get('/config', config_controller_1.getConfig);
 router.put('/config', auth_middleware_1.authenticateAdmin, config_controller_1.updateConfig);
@@ -120,6 +122,8 @@ router.post('/super-admin/login', superAdminController.superAdminLogin);
 // Business Management (protected by super-admin auth)
 router.get('/super-admin/businesses', super_admin_auth_middleware_1.superAdminAuth, superAdminController.getAllBusinesses);
 router.post('/super-admin/businesses', super_admin_auth_middleware_1.superAdminAuth, superAdminController.createBusiness);
+router.post('/super-admin/businesses/bulk-send-stripe-activation', super_admin_auth_middleware_1.superAdminAuth, superAdminController.sendBulkStripeActivationInvites);
 router.delete('/super-admin/businesses/:id', super_admin_auth_middleware_1.superAdminAuth, superAdminController.deleteBusiness);
 router.post('/super-admin/businesses/:id/reset-password', super_admin_auth_middleware_1.superAdminAuth, superAdminController.resetAdminPassword);
+router.post('/super-admin/businesses/:id/send-stripe-activation', super_admin_auth_middleware_1.superAdminAuth, superAdminController.sendStripeActivationInvite);
 exports.default = router;

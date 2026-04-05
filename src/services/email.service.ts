@@ -79,6 +79,21 @@ interface RatingRequestEmailData {
   rating_link: string;
 }
 
+interface PaymentFailureGraceEmailData {
+  to_email: string;
+  business_name: string;
+  id_negocio: string;
+  grace_deadline: string;
+  admin_url: string;
+}
+
+interface ManualBillingActivationEmailData {
+  to_email: string;
+  business_display_name: string;
+  id_negocio: string;
+  checkout_url: string;
+}
+
 
 // --- TRANSPORTER ---
 const transporter = nodemailer.createTransport({
@@ -358,9 +373,72 @@ export const sendAdminNotificationEmail = async (data: AdminNotificationEmailDat
     console.error('Error al enviar email de notificación a admin con Nodemailer:', error);
     throw error;
   }
+};
+
+export const sendManualBillingActivationEmail = async (data: ManualBillingActivationEmailData) => {
+  const title = 'Activa tu periodo de prueba y suscripción';
+  const content = `
+    <p>Hola,</p>
+    <p>Tu espacio de reservas para <strong>${data.business_display_name}</strong> (ID: ${data.id_negocio}) ya está preparado.</p>
+    <p>A partir de ahora entra en vigor tu <strong>periodo de prueba de 30 días</strong> en cuanto completes el pago seguro con tarjeta en el siguiente enlace. <strong>No se perderá ningún dato</strong> que ya tengas configurado (servicios, horarios, reservas, etc.).</p>
+    <p>Tras los 30 días de prueba, se aplicará la cuota mensual habitual del servicio, con los cargos recurrentes en la tarjeta que indiques.</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${data.checkout_url}" style="background-color: #CF0D0E; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
+        Activar prueba y método de pago
+      </a>
+    </div>
+    <p style="font-size: 14px; color: #666;">Si el botón no funciona, copia y pega este enlace en tu navegador:<br><a href="${data.checkout_url}" style="color: #BE5B5D; word-break: break-all;">${data.checkout_url}</a></p>
+    <p style="margin-top: 20px;">Saludos cordiales,<br>El equipo de <strong>Pixelnova</strong></p>
+  `;
+
+  const mailOptions = {
+    from: `"Reservas Pixelnova" <${SENDER_EMAIL}>`,
+    to: data.to_email,
+    subject: `Activa tu periodo de prueba: ${data.business_display_name}`,
+    html: emailWrapper(title, content),
   };
 
-  export const sendRatingRequestEmail = async (data: RatingRequestEmailData) => {
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Error al enviar email de activación manual Stripe:', error);
+    throw error;
+  }
+};
+
+export const sendPaymentFailureGraceEmail = async (data: PaymentFailureGraceEmailData) => {
+  const title = 'Problema con el pago de tu suscripción';
+  const content = `
+    <p>Hola,</p>
+    <p>No hemos podido cobrar la cuota de tu suscripción para <strong>${data.business_name}</strong> (ID: ${data.id_negocio}).</p>
+    <p>Dispones de tiempo hasta el <strong>${data.grace_deadline}</strong> para <strong>actualizar el método de pago</strong> o <strong>exportar y guardar tus datos</strong> desde el panel de administración.</p>
+    <p>Durante este periodo tu página de reservas y el panel de administración siguen activos con normalidad.</p>
+    <p>Si pasada esa fecha no se regulariza el pago, el servicio se dará de baja y <strong>los datos del negocio se eliminarán de forma definitiva</strong>.</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${data.admin_url}" style="background-color: #CF0D0E; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold;">
+        Ir al panel de administración
+      </a>
+    </div>
+    <p style="font-size: 14px; color: #666;">Si necesitas ayuda, escríbenos a <a href="mailto:info@pixelnova.es">info@pixelnova.es</a> o llámanos al 633 703 882.</p>
+    <p style="margin-top: 20px;">Saludos cordiales,<br>El equipo de <strong>Pixelnova</strong></p>
+  `;
+
+  const mailOptions = {
+    from: `"Reservas Pixelnova" <${SENDER_EMAIL}>`,
+    to: data.to_email,
+    subject: `Acción requerida: pago de suscripción (${data.business_name})`,
+    html: emailWrapper(title, content),
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Error al enviar email de fallo de pago / periodo de gracia:', error);
+    throw error;
+  }
+};
+
+export const sendRatingRequestEmail = async (data: RatingRequestEmailData) => {
   const title = "¿Cómo fue tu experiencia?";
   const content = `
     <p>Hola <strong>${data.user_name}</strong>,</p>
@@ -388,4 +466,4 @@ export const sendAdminNotificationEmail = async (data: AdminNotificationEmailDat
     console.error('Error al enviar email de solicitud de valoración:', error);
     throw error;
   }
-  };
+};

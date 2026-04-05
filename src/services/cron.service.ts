@@ -2,7 +2,9 @@ import cron from 'node-cron';
 import { ReservaModel } from '../models/reserva.model';
 import { BusinessConfigModel } from '../models/config.model';
 import { StaffModel } from '../models/staff.model';
+import { AllowedBusinessModel } from '../models/allowed-business.model';
 import { sendCancellationEmail, sendRatingRequestEmail, sendBookingReminderEmail } from './email.service';
+import { purgeBusinessData } from './business-cleanup.service';
 
 const MS_HOUR = 60 * 60 * 1000;
 
@@ -234,6 +236,31 @@ export const startRatingRequestJob = () => {
       }
     } catch (error) {
       console.error('Error in rating request job:', error);
+    }
+  });
+};
+
+/**
+ * Tras superar billingGraceEndsAt sin regularizar el pago, elimina el negocio y todos sus datos.
+ * Solo afecta a cuentas que entraron en periodo de gracia por impago (campo billingGraceEndsAt).
+ */
+export const startBillingGraceExpirationJob = () => {
+  cron.schedule('0 5 * * *', async () => {
+    const now = new Date();
+    try {
+      const expired = await AllowedBusinessModel.find({
+        billingGraceEndsAt: { $exists: true, $lte: now },
+      }).lean();
+
+      for (const row of expired) {
+        try {
+          await purgeBusinessData(row.idNegocio);
+        } catch (e) {
+          console.error(`[billing-grace-expiry] Error purgando ${row.idNegocio}:`, e);
+        }
+      }
+    } catch (error) {
+      console.error('Error in billing grace expiration job:', error);
     }
   });
 };

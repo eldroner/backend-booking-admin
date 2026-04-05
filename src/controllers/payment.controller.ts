@@ -1,47 +1,77 @@
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
 
-import { AllowedBusinessModel } from '../models/allowed-business.model';
+import { AllowedBusinessModel, IAllowedBusiness } from '../models/allowed-business.model';
 import { BusinessConfigModel } from '../models/config.model';
 import { sendWelcomeEmail } from '../services/email.service';
+import {
+  applyBillingGraceForDelinquentStatus,
+  clearBillingGraceIfRecovered,
+  isDelinquentStripeStatus,
+} from '../services/billing-grace.service';
 
 const stripe = new Stripe(process.env.STRIPE_API_KEY || '', {
   apiVersion: '2024-04-10',
 });
 
+const DEFAULT_STRIPE_PRICE_ID = 'price_1S0SDxDz9N5vmn9tXiypiQNh';
+
+function stripePriceId(): string {
+  return (process.env.STRIPE_PRICE_ID || DEFAULT_STRIPE_PRICE_ID).trim();
+}
+
+/**
+ * Crea sesión Checkout en modo suscripción (30 días de prueba). Misma lógica que el alta web.
+ * Los metadatos usan idNegocio y email en minúsculas para coincidir con AllowedBusiness.
+ */
+export async function createStripeSubscriptionCheckoutUrl(businessId: string, userEmail: string): Promise<string> {
+  const idNeg = String(businessId).toLowerCase().trim();
+  const emailNorm = String(userEmail).toLowerCase().trim();
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    line_items: [{ price: stripePriceId(), quantity: 1 }],
+    mode: 'subscription',
+    subscription_data: { trial_period_days: 30 },
+    success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.FRONTEND_URL}/payment-cancelled`,
+    metadata: { businessId: idNeg, userEmail: emailNorm, planName: 'default' },
+  });
+  if (!session.url) {
+    throw new Error('Stripe no devolvió URL de checkout');
+  }
+  return session.url;
+}
+
 export const createCheckoutSession = async (req: Request, res: Response) => {
   const { businessId, userEmail } = req.body;
-  const plan = { priceId: 'price_1S0SDxDz9N5vmn9tXiypiQNh' };
 
   if (!businessId || !userEmail) {
     return res.status(400).json({ error: 'Invalid input: businessId and userEmail are required.' });
   }
 
   try {
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [{ price: plan.priceId, quantity: 1 }],
-      mode: 'subscription',
-      subscription_data: { trial_period_days: 30 },
-      success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/payment-cancelled`,
-      metadata: { businessId, userEmail, planName: 'default' },
-    });
-    res.status(200).json({ url: session.url });
+    const url = await createStripeSubscriptionCheckoutUrl(businessId, userEmail);
+    res.status(200).json({ url });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     res.status(500).json({ error: `Stripe Error: ${errorMessage}` });
   }
 };
 
+type StoredSubscriptionStatus = NonNullable<IAllowedBusiness['subscriptionStatus']>;
+
 const handleSubscriptionChange = async (subscription: Stripe.Subscription) => {
   const { id, status, current_period_end, cancel_at_period_end } = subscription;
   const business = await AllowedBusinessModel.findOne({ stripeSubscriptionId: id });
 
   if (business) {
-    business.subscriptionStatus = status as 'trialing' | 'active' | 'canceled' | 'paused' | 'unpaid';
+    business.subscriptionStatus = status as StoredSubscriptionStatus;
     business.periodEndDate = new Date(current_period_end * 1000);
     business.cancelAtPeriodEnd = cancel_at_period_end;
+    clearBillingGraceIfRecovered(business, status);
+    if (isDelinquentStripeStatus(status)) {
+      await applyBillingGraceForDelinquentStatus(business);
+    }
     await business.save();
     console.log(`Subscription ${id} for business ${business.idNegocio} updated to ${status}.`);
   } else {
@@ -77,30 +107,42 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
 
       const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
 
+      const idNeg = String(businessId).toLowerCase().trim();
+      const emailNorm = String(userEmail).toLowerCase().trim();
+
       try {
-        const existingBusiness = await AllowedBusinessModel.findOne({ emailContacto: userEmail });
+        const existingBusiness = await AllowedBusinessModel.findOne({
+          idNegocio: idNeg,
+          emailContacto: emailNorm,
+        });
         if (existingBusiness) {
-          console.log(`Webhook for existing email: ${userEmail}. Updating subscription info.`);
+          console.log(`Webhook: vinculando Stripe a negocio existente ${idNeg} (${emailNorm}). Configuración no se sobrescribe.`);
           existingBusiness.stripeSubscriptionId = subscription.id;
-          existingBusiness.subscriptionStatus = subscription.status as 'trialing' | 'active' | 'canceled' | 'paused' | 'unpaid';
+          existingBusiness.subscriptionStatus = subscription.status as StoredSubscriptionStatus;
           existingBusiness.periodEndDate = new Date(subscription.current_period_end * 1000);
           existingBusiness.cancelAtPeriodEnd = subscription.cancel_at_period_end;
+          existingBusiness.billingGraceEndsAt = undefined;
+          existingBusiness.billingFailureEmailSentAt = undefined;
+          if (!existingBusiness.billingOnboardingSource) {
+            existingBusiness.billingOnboardingSource = 'super_admin';
+          }
           await existingBusiness.save();
         } else {
           const newBusiness = new AllowedBusinessModel({
-            idNegocio: businessId,
-            emailContacto: userEmail,
+            idNegocio: idNeg,
+            emailContacto: emailNorm,
             estado: 'activo',
+            billingOnboardingSource: 'stripe_self_serve',
             stripeSubscriptionId: subscription.id,
-            subscriptionStatus: subscription.status as 'trialing' | 'active' | 'canceled' | 'paused' | 'unpaid',
+            subscriptionStatus: subscription.status as StoredSubscriptionStatus,
             periodEndDate: new Date(subscription.current_period_end * 1000),
             cancelAtPeriodEnd: subscription.cancel_at_period_end,
           });
           await newBusiness.save();
 
           const defaultConfig = new BusinessConfigModel({
-            idNegocio: businessId,
-            nombre: businessId,
+            idNegocio: idNeg,
+            nombre: idNeg,
             duracionBase: 30,
             maxReservasPorSlot: 1,
             servicios: [
@@ -116,7 +158,7 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
             ],
           });
           await defaultConfig.save();
-          await sendWelcomeEmail({ to_email: userEmail, business_id: businessId });
+          await sendWelcomeEmail({ to_email: emailNorm, business_id: idNeg });
         }
         console.log(`✅ Business created/updated for ${businessId}.`);
       } catch (dbError) {
@@ -127,10 +169,25 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
     case 'customer.subscription.updated':
     case 'customer.subscription.deleted':
     case 'customer.subscription.paused':
-    case 'customer.subscription.resumed':
+    case 'customer.subscription.resumed': {
       const subscription = event.data.object as Stripe.Subscription;
       await handleSubscriptionChange(subscription);
       break;
+    }
+    case 'invoice.payment_failed': {
+      const invoice = event.data.object as Stripe.Invoice;
+      const subRef = invoice.subscription;
+      const subId = typeof subRef === 'string' ? subRef : subRef?.id;
+      if (!subId) {
+        break;
+      }
+      const business = await AllowedBusinessModel.findOne({ stripeSubscriptionId: subId });
+      if (business) {
+        await applyBillingGraceForDelinquentStatus(business);
+        await business.save();
+      }
+      break;
+    }
     default:
       console.log(`Unhandled event type ${event.type}`);
   }
@@ -193,6 +250,8 @@ export const getSubscriptionDetails = async (req: Request, res: Response) => {
       subscriptionStatus: business.subscriptionStatus,
       periodEndDate: business.periodEndDate,
       cancelAtPeriodEnd: business.cancelAtPeriodEnd,
+      pausedUntil: business.pausedUntil ?? null,
+      billingGraceEndsAt: business.billingGraceEndsAt ?? null,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

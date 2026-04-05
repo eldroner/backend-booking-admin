@@ -34,6 +34,7 @@ mongoose_1.default.connect(MONGODB_URI, mongooseOptions)
     (0, cron_service_1.startReservationCleanupJob)();
     (0, cron_service_1.startRatingRequestJob)();
     (0, cron_service_1.startBookingReminderJob)();
+    (0, cron_service_1.startBillingGraceExpirationJob)();
 })
     .catch(err => {
     console.error('❌ Error de conexión a MongoDB:', err.message);
