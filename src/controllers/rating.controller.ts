@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { RatingModel } from '../models/rating.model';
 import { ReservaModel } from '../models/reserva.model';
 import { StaffModel } from '../models/staff.model';
+import { AllowedBusinessModel } from '../models/allowed-business.model';
 
 export const submitRating = async (req: Request, res: Response) => {
   try {
@@ -77,5 +78,59 @@ export const getRatingInfo = async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener información de la valoración' });
+  }
+};
+
+/** Listado público de reseñas de un profesional (para popup en la vista de usuario). */
+export const getStaffRatings = async (req: Request, res: Response) => {
+  try {
+    const { idNegocio, staffId, limit } = req.query as {
+      idNegocio?: string;
+      staffId?: string;
+      limit?: string;
+    };
+
+    if (!idNegocio || !staffId) {
+      return res.status(400).json({ error: 'idNegocio y staffId son requeridos' });
+    }
+
+    // Verificar negocio existente (evita enumeración accidental de staffIds).
+    const allowed = await AllowedBusinessModel.findOne({ idNegocio: String(idNegocio).toLowerCase().trim() })
+      .select('_id')
+      .lean();
+    if (!allowed) {
+      return res.status(404).json({ error: 'Negocio no encontrado' });
+    }
+
+    // Verificar que el staff pertenece al negocio.
+    const staff = await StaffModel.findOne({ _id: staffId, idNegocio: String(idNegocio).toLowerCase().trim() })
+      .select('_id')
+      .lean();
+    if (!staff) {
+      return res.status(404).json({ error: 'Profesional no encontrado' });
+    }
+
+    const n = Math.max(1, Math.min(25, parseInt(limit || '6', 10) || 6));
+
+    const ratings = await RatingModel.find({ staffId: String(staffId) })
+      .sort({ fecha: -1, createdAt: -1 })
+      .limit(n)
+      .select('puntuacion comentario nombreCliente fecha createdAt')
+      .lean();
+
+    // Devolver solo reseñas con comentario para que el popup tenga “chicha”.
+    const withText = ratings
+      .filter(r => typeof r.comentario === 'string' && r.comentario.trim().length > 0)
+      .map(r => ({
+        puntuacion: r.puntuacion,
+        comentario: String(r.comentario || '').trim(),
+        nombreCliente: r.nombreCliente,
+        fecha: (r.fecha || (r as any).createdAt || new Date()).toISOString(),
+      }));
+
+    res.json({ ratings: withText });
+  } catch (error) {
+    console.error('Error en getStaffRatings:', error);
+    res.status(500).json({ error: 'Error al obtener reseñas' });
   }
 };

@@ -99,6 +99,7 @@ router.delete('/staff/:id', auth_middleware_1.authenticateAdmin, staff_controlle
 // Valoraciones
 router.get('/rating/info/:token', rating_controller_1.getRatingInfo);
 router.post('/rating/submit/:token', rating_controller_1.submitRating);
+router.get('/ratings', rating_controller_1.getStaffRatings);
 // Reservas (algunas protegidas)
 router.get('/reservas', reservas_controller_1.getReservas);
 router.get('/reservas/statistics', auth_middleware_1.authenticateAdmin, reservas_controller_1.getStatistics);

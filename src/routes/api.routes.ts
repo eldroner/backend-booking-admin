@@ -15,7 +15,7 @@ import { uploadImage, uploadImages } from '../controllers/upload.controller';
 import multer = require('multer');
 
 import { getStaff, addStaff, updateStaff, deleteStaff } from '../controllers/staff.controller';
-import { submitRating, getRatingInfo } from '../controllers/rating.controller';
+import { submitRating, getRatingInfo, getStaffRatings } from '../controllers/rating.controller';
 
 /** Límite por archivo (coincide con lo recomendado en Nginx: client_max_body_size). */
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -75,6 +75,7 @@ router.delete('/staff/:id', authenticateAdmin, deleteStaff);
 // Valoraciones
 router.get('/rating/info/:token', getRatingInfo);
 router.post('/rating/submit/:token', submitRating);
+router.get('/ratings', getStaffRatings);
 
 // Reservas (algunas protegidas)
 router.get('/reservas', getReservas);
