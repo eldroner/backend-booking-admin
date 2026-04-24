@@ -3,6 +3,7 @@ import { RatingModel } from '../models/rating.model';
 import { ReservaModel } from '../models/reserva.model';
 import { StaffModel } from '../models/staff.model';
 import { AllowedBusinessModel } from '../models/allowed-business.model';
+import { BusinessConfigModel } from '../models/config.model';
 
 export const submitRating = async (req: Request, res: Response) => {
   try {
@@ -68,12 +69,27 @@ export const getRatingInfo = async (req: Request, res: Response) => {
     }
     
     const staff = await StaffModel.findById(reserva.staffId);
+
+    // Resolver nombre del servicio si tenemos configuración del negocio.
+    // `reserva.servicio` suele ser el id del servicio (string).
+    let serviceName: string | undefined;
+    if (reserva.idNegocio) {
+      const config = await BusinessConfigModel.findOne({ idNegocio: reserva.idNegocio })
+        .select('servicios')
+        .lean();
+      if (config?.servicios?.length) {
+        const found = config.servicios.find(
+          (s: any) => String(s.id) === String(reserva.servicio) || s.nombre === reserva.servicio
+        );
+        if (found?.nombre) serviceName = String(found.nombre);
+      }
+    }
     
     res.json({
       nombreCliente: reserva.usuario.nombre,
       staffNombre: staff?.nombre || 'Nuestro equipo',
       staffFoto: staff?.fotoUrl,
-      servicio: reserva.servicio,
+      servicioNombre: serviceName,
       yaValorado: reserva.ratingSubmitted
     });
   } catch (error) {
