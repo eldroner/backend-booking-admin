@@ -33,9 +33,34 @@ async function poolCapacitySinProfesionalAsignado(idNegocio, maxReservasPorSlot,
     }
     const n = await staff_model_1.StaffModel.countDocuments(filter);
     if (n > 0) {
-        return n;
+        // `maxReservasPorSlot` actúa como tope, aunque haya más profesionales activos.
+        return Math.max(1, Math.min(n, maxReservasPorSlot || 1));
     }
     return Math.max(1, maxReservasPorSlot || 1);
+}
+async function pickStaffForSlot(params) {
+    const { idNegocio, servicioId, fechaInicio, duracionMinutos } = params;
+    // Staff elegible: activo y (serviciosIds vacío/ausente = todos) o incluye servicio.
+    const filter = { idNegocio, activo: true };
+    filter.$or = [
+        { serviciosIds: { $exists: false } },
+        { serviciosIds: { $size: 0 } },
+        { serviciosIds: servicioId }
+    ];
+    const staff = await staff_model_1.StaffModel.find(filter).select('_id nombre').lean();
+    if (!staff?.length)
+        return null;
+    // Elegir el profesional con menos solapes en esa franja.
+    const scored = await Promise.all(staff.map(async (s) => {
+        const overlaps = await countReservasSolapadas(idNegocio, fechaInicio, duracionMinutos, String(s._id));
+        return { staffId: String(s._id), staffNombre: String(s.nombre || '').trim() || undefined, overlaps };
+    }));
+    scored.sort((a, b) => a.overlaps - b.overlaps);
+    const best = scored[0];
+    // Regla estricta: solo asignamos si está libre (sin solape).
+    if (!best || best.overlaps > 0)
+        return null;
+    return { staffId: best.staffId, staffNombre: best.staffNombre };
 }
 /** Reservas activas que solapan [fechaInicio, fechaInicio + duración). Misma lógica en /disponibilidad y al crear reserva. */
 async function countReservasSolapadas(idNegocio, fechaInicio, duracionMinutos, staffFilter) {
@@ -105,23 +130,40 @@ const createReserva = async (req, res) => {
             return res.status(400).json({ error: 'idNegocio es requerido' });
         }
         const duracionMin = reservaBody.duracion || 30;
-        const solapes = await countReservasSolapadas(idNegocio, fechaInicio, duracionMin, reservaBody.staffId);
-        if (reservaBody.staffId) {
-            if (solapes > 0) {
-                return res.status(409).json({
-                    error: 'Ese profesional no está disponible en el horario elegido.',
-                    detalles: 'Ya existe una reserva solapada para este miembro del equipo.'
-                });
-            }
+        // 1) Enforce global cap (maxReservasPorSlot) para cualquier modo.
+        const totalSolapes = await countReservasSolapadas(idNegocio, fechaInicio, duracionMin, null);
+        const globalCap = Math.max(1, config?.maxReservasPorSlot ?? 1);
+        if (totalSolapes >= globalCap) {
+            return res.status(409).json({
+                error: 'No hay huecos libres para ese horario.',
+                detalles: 'El cupo de reservas para esta franja está completo.'
+            });
         }
-        else {
-            const poolCap = await poolCapacitySinProfesionalAsignado(idNegocio, config?.maxReservasPorSlot ?? 1, reservaBody.servicio);
-            if (solapes >= poolCap) {
+        // 2) Asignación de profesional si viene “cualquiera” (sin staffId).
+        if (!reservaBody.staffId) {
+            const chosen = await pickStaffForSlot({
+                idNegocio: idNegocio,
+                servicioId: reservaBody.servicio,
+                fechaInicio,
+                duracionMinutos: duracionMin
+            });
+            if (!chosen) {
                 return res.status(409).json({
-                    error: 'No hay huecos libres para ese horario.',
-                    detalles: 'El cupo de reservas para esta franja está completo.'
+                    error: 'No hay profesionales disponibles en ese horario.',
+                    detalles: 'No hay ningún miembro del equipo libre para ese servicio en esa franja.'
                 });
             }
+            reservaBody.staffId = chosen.staffId;
+            // Guardamos staffNombre denormalizado
+            reservaBody.staffNombre = chosen.staffNombre;
+        }
+        // 3) Validación final de disponibilidad del profesional elegido (o especificado).
+        const solapesStaff = await countReservasSolapadas(idNegocio, fechaInicio, duracionMin, reservaBody.staffId);
+        if (solapesStaff > 0) {
+            return res.status(409).json({
+                error: 'Ese profesional no está disponible en el horario elegido.',
+                detalles: 'Ya existe una reserva solapada para este miembro del equipo.'
+            });
         }
         if (!process.env.JWT_SECRET) {
             throw new Error("JWT_SECRET no está configurado en las variables de entorno");
@@ -158,7 +200,7 @@ const createReserva = async (req, res) => {
                 precioBase = servicio.enOferta && servicio.precioOferta ? servicio.precioOferta : (servicio.precio || 0);
             }
         }
-        const staffNombre = await resolveStaffNombre(reservaBody.staffId, idNegocio);
+        const staffNombre = reservaBody.staffNombre || (await resolveStaffNombre(reservaBody.staffId, idNegocio));
         // Crear objeto de reserva
         const reservaId = (0, uuid_1.v4)();
         const reservaData = {
@@ -242,17 +284,30 @@ const addReservaAdmin = async (req, res) => {
         }
         const config = await config_model_1.BusinessConfigModel.findOne({ idNegocio });
         const duracionAdmin = reservaData.duracion || 30;
-        const solapesAdmin = await countReservasSolapadas(idNegocio, inicio, duracionAdmin, reservaData.staffId);
-        if (reservaData.staffId) {
-            if (solapesAdmin > 0) {
-                return res.status(409).json({ message: 'Ese profesional ya tiene una reserva en ese horario.' });
-            }
+        // Enforce global cap
+        const totalSolapes = await countReservasSolapadas(idNegocio, inicio, duracionAdmin, null);
+        const globalCap = Math.max(1, config?.maxReservasPorSlot ?? 1);
+        if (totalSolapes >= globalCap) {
+            return res.status(409).json({ message: 'No hay huecos libres para ese horario.' });
         }
-        else {
-            const poolCapAdmin = await poolCapacitySinProfesionalAsignado(idNegocio, config?.maxReservasPorSlot ?? 1, reservaData.servicio);
-            if (solapesAdmin >= poolCapAdmin) {
-                return res.status(409).json({ message: 'No hay huecos libres para ese horario.' });
+        // Auto-assign staff if "cualquiera"
+        if (!reservaData.staffId) {
+            const chosen = await pickStaffForSlot({
+                idNegocio,
+                servicioId: reservaData.servicio,
+                fechaInicio: inicio,
+                duracionMinutos: duracionAdmin
+            });
+            if (!chosen) {
+                return res.status(409).json({ message: 'No hay profesionales disponibles en ese horario.' });
             }
+            reservaData.staffId = chosen.staffId;
+            reservaData.staffNombre = chosen.staffNombre;
+        }
+        // Staff availability check
+        const solapesStaff = await countReservasSolapadas(idNegocio, inicio, duracionAdmin, reservaData.staffId);
+        if (solapesStaff > 0) {
+            return res.status(409).json({ message: 'Ese profesional ya tiene una reserva en ese horario.' });
         }
         // Obtener precio base del servicio
         let precioBase = 0;
@@ -264,7 +319,7 @@ const addReservaAdmin = async (req, res) => {
         }
         const uniqueToken = `admin-generated-${crypto_1.default.randomBytes(8).toString('hex')}`;
         const ratingToken = crypto_1.default.randomBytes(32).toString('hex');
-        const staffNombreAdmin = await resolveStaffNombre(reservaData.staffId, idNegocio);
+        const staffNombreAdmin = reservaData.staffNombre || (await resolveStaffNombre(reservaData.staffId, idNegocio));
         const reserva = new reserva_model_1.ReservaModel({
             _id: (0, uuid_1.v4)(),
             ...reservaData,
